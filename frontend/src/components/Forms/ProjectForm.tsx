@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   Box, 
   TextField, 
@@ -12,12 +12,23 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  SelectChangeEvent
+  SelectChangeEvent,
+  Chip,
+  Tooltip,
+  CircularProgress,
+  InputAdornment,
+  IconButton
 } from '@mui/material';
-import { Save as SaveIcon, Link as LinkIcon } from '@mui/icons-material';
+import { 
+  Save as SaveIcon, 
+  Link as LinkIcon,
+  Refresh as RefreshIcon,
+  AutoAwesome as AutoAwesomeIcon
+} from '@mui/icons-material';
 import { Category, CategoryWithSubcategories, Project } from '@/types';
 import ErrorAlert from '@/components/UI/ErrorAlert';
 import LoadingButton from '@/components/UI/LoadingButton';
+import { metadataApi } from '@/services/api';
 
 interface ProjectFormProps {
   listId: number;
@@ -44,6 +55,11 @@ export default function ProjectForm({
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fetchingMetadata, setFetchingMetadata] = useState(false);
+  const [categoryConfidence, setCategoryConfidence] = useState<number | null>(null);
+
+  // Use ref to track if URL has already been processed
+  const urlProcessedRef = useRef<string | null>(null);
 
   // Flatten categories for the dropdown
   const [flatCategories, setFlatCategories] = useState<Category[]>([]);
@@ -68,6 +84,17 @@ export default function ProjectForm({
       ...prev,
       [name]: value
     }));
+
+    // Auto-fetch metadata when URL is entered and has a valid format
+    if (name === 'url' && value && value !== urlProcessedRef.current) {
+      // Basic validation before trying to fetch
+      try {
+        new URL(value);
+        fetchSiteMetadata(value);
+      } catch (_) {
+        // Not a valid URL yet, do nothing
+      }
+    }
   };
 
   const handleSelectChange = (e: SelectChangeEvent) => {
@@ -76,6 +103,56 @@ export default function ProjectForm({
       ...prev,
       [name]: Number(value)
     }));
+  };
+
+  const fetchSiteMetadata = async (url: string) => {
+    try {
+      setFetchingMetadata(true);
+      setCategoryConfidence(null);
+      
+      // Remember this URL so we don't process it again
+      urlProcessedRef.current = url;
+      
+      // Get site metadata
+      const metadata = await metadataApi.getSiteMetadata(url);
+      
+      // Auto-fill description if it's empty
+      if (!formData.description && metadata.description) {
+        setFormData(prev => ({
+          ...prev,
+          description: metadata.description
+        }));
+      }
+      
+      // Auto-fill title if it's empty or generic
+      if ((!formData.title || formData.title === 'New Project') && metadata.title) {
+        setFormData(prev => ({
+          ...prev,
+          title: metadata.title
+        }));
+      }
+      
+      // Get category suggestion if not in edit mode
+      if (!isEdit) {
+        const suggestion = await metadataApi.getCategorySuggestion(
+          listId, 
+          url,
+          formData.description
+        );
+        
+        if (suggestion.category_id && suggestion.confidence > 0.3) {
+          setFormData(prev => ({
+            ...prev,
+            category_id: suggestion.category_id
+          }));
+          setCategoryConfidence(suggestion.confidence);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching metadata:', error);
+    } finally {
+      setFetchingMetadata(false);
+    }
   };
 
   const validateForm = () => {
@@ -124,6 +201,20 @@ export default function ProjectForm({
     }
   };
 
+  // Function to manually refresh metadata
+  const refreshMetadata = () => {
+    if (formData.url) {
+      try {
+        new URL(formData.url);
+        fetchSiteMetadata(formData.url);
+      } catch (_) {
+        setError('Please enter a valid URL before refreshing metadata');
+      }
+    } else {
+      setError('Please enter a URL to fetch metadata');
+    }
+  };
+
   return (
     <Paper component="form" onSubmit={handleSubmit} sx={{ p: 4 }}>
       <Typography variant="h6" gutterBottom>
@@ -156,8 +247,26 @@ export default function ProjectForm({
             placeholder="https://github.com/username/repository"
             InputProps={{
               startAdornment: <LinkIcon sx={{ mr: 1, color: 'text.secondary' }} />,
+              endAdornment: (
+                <InputAdornment position="end">
+                  <Tooltip title="Refresh metadata from URL">
+                    <IconButton 
+                      onClick={refreshMetadata}
+                      disabled={fetchingMetadata}
+                      edge="end"
+                    >
+                      {fetchingMetadata ? <CircularProgress size={20} /> : <RefreshIcon />}
+                    </IconButton>
+                  </Tooltip>
+                </InputAdornment>
+              )
             }}
           />
+          {fetchingMetadata && (
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+              Fetching website information...
+            </Typography>
+          )}
         </Grid>
         
         <Grid item xs={12}>
@@ -180,9 +289,20 @@ export default function ProjectForm({
               labelId="category-label"
               id="category"
               name="category_id"
-              value={formData.category_id.toString()}
+              value={formData.category_id ? formData.category_id.toString() : ''}
               label="Category"
               onChange={handleSelectChange}
+              startAdornment={
+                categoryConfidence !== null ? (
+                  <Tooltip title={`Auto-suggested with ${Math.round(categoryConfidence * 100)}% confidence`}>
+                    <AutoAwesomeIcon 
+                      color="primary" 
+                      fontSize="small" 
+                      sx={{ ml: 1, mr: 1 }} 
+                    />
+                  </Tooltip>
+                ) : null
+              }
             >
               {flatCategories.map((category) => (
                 <MenuItem 
@@ -193,6 +313,11 @@ export default function ProjectForm({
                 </MenuItem>
               ))}
             </Select>
+            {categoryConfidence !== null && (
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+                Category was auto-suggested based on URL content
+              </Typography>
+            )}
           </FormControl>
         </Grid>
       </Grid>

@@ -29,7 +29,8 @@ import {
   GitHub as GitHubIcon,
   ImportExport as ImportExportIcon,
   Link as LinkIcon,
-  Search as SearchIcon
+  Search as SearchIcon,
+  PostAdd as PostAddIcon
 } from '@mui/icons-material';
 import AppLayout from '@/components/Layout/AppLayout';
 import PageHeader from '@/components/UI/PageHeader';
@@ -312,6 +313,15 @@ export default function AwesomeListDetail({ params }: PageProps) {
             }}
             sx={{ width: 300 }}
           />
+          <Button 
+            variant="outlined" 
+            size="small"
+            onClick={() => router.push(`/awesome-lists/${listId}/batch-urls`)}
+            startIcon={<PostAddIcon />}
+            color="secondary"
+          >
+            Batch Add URLs
+          </Button>
           <Button 
             variant="outlined" 
             size="small"

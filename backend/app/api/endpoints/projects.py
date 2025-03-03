@@ -16,6 +16,7 @@ from app.services.project_service import (
     update_project,
     delete_project,
 )
+from app.utils.site_metadata import fetch_site_metadata, suggest_category
 
 router = APIRouter()
 
@@ -52,6 +53,49 @@ def create_new_project(
                     status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                     detail=f"Missing required field: {field}"
                 )
+        
+        # If no description is provided or description is empty, try to fetch from site
+        if not project_in.get("description") and project_in.get("url"):
+            try:
+                metadata = fetch_site_metadata(project_in["url"])
+                if metadata.get("description"):
+                    project_in["description"] = metadata["description"]
+                
+                # If no title is provided or it's a generic name, use the one from metadata
+                if (not project_in.get("title") or project_in["title"] == "New Project") and metadata.get("title"):
+                    project_in["title"] = metadata["title"]
+                
+                # Save the metadata in project_metadata
+                if not project_in.get("project_metadata"):
+                    project_in["project_metadata"] = {}
+                project_in["project_metadata"]["site_metadata"] = metadata
+            except Exception as e:
+                # Log the error but continue with creation
+                print(f"Error fetching metadata: {str(e)}")
+        
+        # If category_id is not specified or is 0, try to suggest a category
+        if (not project_in.get("category_id") or project_in["category_id"] == 0) and project_in.get("list_id"):
+            try:
+                suggested_cat_id, confidence = suggest_category(
+                    db=db,
+                    list_id=project_in["list_id"],
+                    url=project_in["url"],
+                    description=project_in.get("description")
+                )
+                
+                if suggested_cat_id and confidence > 0.3:  # Only use if confidence is reasonable
+                    project_in["category_id"] = suggested_cat_id
+                    
+                    # Store suggestion info in metadata
+                    if not project_in.get("project_metadata"):
+                        project_in["project_metadata"] = {}
+                    project_in["project_metadata"]["category_suggestion"] = {
+                        "category_id": suggested_cat_id,
+                        "confidence": confidence
+                    }
+            except Exception as e:
+                # Log the error but continue with creation
+                print(f"Error suggesting category: {str(e)}")
         
         # Create project
         db_project = Project(

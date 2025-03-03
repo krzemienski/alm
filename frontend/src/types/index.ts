@@ -88,6 +88,16 @@ export interface ProjectCreate {
   metadata?: Record<string, any>;
 }
 
+// URL Analysis Result type for batch characterization
+export interface UrlAnalysisResult {
+  url: string;
+  title?: string | null;
+  description?: string | null;
+  category_id?: number | null;
+  confidence?: number | null;
+  error?: string | null;
+}
+
 // GitHub validation types
 export interface ValidationResult {
   success: boolean;

@@ -10,7 +10,8 @@ import {
   ProjectCreate, 
   ValidationResult,
   ExportRequest,
-  ExportResponse
+  ExportResponse,
+  UrlAnalysisResult
 } from '@/types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
@@ -156,6 +157,39 @@ export const projectsApi = {
   // Delete a project
   delete: async (id: number): Promise<void> => {
     await api.delete(ensureTrailingSlash(`/projects/${id}`));
+  }
+};
+
+// Metadata API Services
+export const metadataApi = {
+  // Get site metadata
+  getSiteMetadata: async (url: string): Promise<any> => {
+    const response = await api.get(
+      ensureTrailingSlash('/metadata/site'),
+      { params: { url } }
+    );
+    return response.data;
+  },
+  
+  // Get category suggestion for a URL
+  getCategorySuggestion: async (listId: number, url: string, description?: string): Promise<any> => {
+    const params: Record<string, any> = { list_id: listId, url };
+    if (description) params.description = description;
+    
+    const response = await api.get(
+      ensureTrailingSlash('/metadata/category-suggestion'),
+      { params }
+    );
+    return response.data;
+  },
+  
+  // Batch characterize multiple URLs
+  batchCharacterize: async (listId: number, urls: string[]): Promise<UrlAnalysisResult[]> => {
+    const response = await api.post(
+      ensureTrailingSlash('/metadata/batch-characterize'),
+      { list_id: listId, urls }
+    );
+    return response.data;
   }
 };
 
