@@ -12,6 +12,9 @@ services:
       - DATABASE_URL=sqlite:///./app.db
       - LOG_LEVEL=info
       - GITHUB_ACCESS_TOKEN=${GITHUB_ACCESS_TOKEN}
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     volumes:
       - ./backend/data:/app/data
     healthcheck:

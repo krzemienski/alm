@@ -99,20 +99,22 @@ def test_update_category(category_id, new_name):
         print(response.text)
         return None
 
-def test_create_project(list_id, category_id, title, url, description):
-    """Create a new project"""
+def test_create_project(list_id, category_id, title, url, description=""):
+    """Create a new project in an awesome list"""
     print("\n=== Testing Create Project ===")
-    api_url = f"{API_URL}/projects"
+    url_endpoint = f"{API_URL}/projects/"
     payload = {
         "list_id": list_id,
         "category_id": category_id,
         "title": title,
         "url": url,
-        "description": description
+        "description": description,
+        "project_metadata": {}  # Empty dict for project_metadata
     }
-    response = requests.post(api_url, json=payload)
     
-    if response.status_code in [200, 201]:
+    response = requests.post(url_endpoint, json=payload)
+    
+    if response.status_code == 201:
         data = response.json()
         print(f"Created project: {data['title']}")
         print(f"ID: {data['id']}")
@@ -122,19 +124,20 @@ def test_create_project(list_id, category_id, title, url, description):
         print(response.text)
         return None
 
-def test_update_project(project_id, new_title, new_description):
-    """Update a project"""
+def test_update_project(project_id, title, description):
+    """Update an existing project"""
     print("\n=== Testing Update Project ===")
     url = f"{API_URL}/projects/{project_id}"
     payload = {
-        "title": new_title,
-        "description": new_description
+        "title": title,
+        "description": description
     }
+    
     response = requests.put(url, json=payload)
     
     if response.status_code == 200:
         data = response.json()
-        print(f"Updated project to: {data['title']}")
+        print(f"Updated project: {data['title']}")
         return data
     else:
         print(f"Error updating project: {response.status_code}")
@@ -170,17 +173,17 @@ def test_delete_category(category_id):
         return False
 
 def test_export_awesome_list(list_id):
-    """Export the awesome list"""
+    """Export an awesome list to GitHub"""
     print("\n=== Testing Export Awesome List ===")
     url = f"{API_URL}/awesome-lists/{list_id}/export"
-    payload = {"id": list_id}
-    response = requests.post(url, json=payload)
+    
+    # Send a JSON object with the list_id
+    response = requests.post(url, json={"id": list_id})
     
     if response.status_code == 200:
         data = response.json()
-        print(f"Successfully exported awesome list")
-        print(f"Message: {data.get('message', 'No message')}")
-        print(f"Commit URL: {data.get('commit_url', 'No commit URL')}")
+        print("Successfully exported awesome list")
+        print(f"Preview: {data['preview'][:100]}...")  # Show first 100 chars of preview
         return data
     else:
         print(f"Error exporting list: {response.status_code}")
@@ -221,11 +224,39 @@ def main():
     # 6. Create a subcategory
     subcategory = test_create_category(list_id, "Test Subcategory", new_category["id"])
     
-    # Skip project-related operations due to API issues
-    print("\n=== Skipping project tests due to API issues ===")
+    # 7. Create projects in the new category
+    project1 = test_create_project(
+        list_id, 
+        new_category["id"],
+        "Test Video Tool",
+        "https://example.com/tool",
+        "A great tool for video processing"
+    )
     
-    # Skip export test due to API issues 
-    print("\n=== Skipping export test due to API issues ===")
+    project2 = None
+    if subcategory:
+        project2 = test_create_project(
+            list_id, 
+            subcategory["id"],
+            "Another Test Tool",
+            "https://example.com/another-tool",
+            "Another fantastic tool for video processing"
+        )
+    
+    # 8. Update a project
+    if project1:
+        test_update_project(
+            project1["id"],
+            "Updated Test Video Tool",
+            "An updated description for this amazing tool"
+        )
+    
+    # 9. Delete one project
+    if project2:
+        test_delete_project(project2["id"])
+    
+    # 10. Export the awesome list
+    test_export_awesome_list(list_id)
     
     print("\n=== All tests completed successfully! ===")
 

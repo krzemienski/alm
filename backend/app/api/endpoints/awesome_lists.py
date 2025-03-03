@@ -1,6 +1,5 @@
-from typing import List, Any
-
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import List, Any, Dict
+from fastapi import APIRouter, Depends, HTTPException, status, Body
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -111,10 +110,10 @@ def import_from_github(
 
 @router.post("/{list_id}/export", status_code=status.HTTP_200_OK)
 def export_to_github(
-    list_id: int, export_data: AwesomeListExport, db: Session = Depends(get_db)
+    list_id: int, body: Dict[str, Any] = Body(default={}), db: Session = Depends(get_db)
 ) -> Any:
     """
-    Export an awesome list to GitHub.
+    Export an awesome list to GitHub or generate README markdown.
     """
     awesome_list = get_awesome_list(db=db, list_id=list_id)
     if not awesome_list:
@@ -123,24 +122,27 @@ def export_to_github(
             detail=f"Awesome list with ID {list_id} not found",
         )
     
-    from app.services.markdown_generator import generate_readme
-    
     try:
-        # Generate README content
+        # Import here to avoid circular imports
+        from app.services.markdown_generator import generate_readme
+        
+        # Generate the README content
         readme_content = generate_readme(db, awesome_list)
         
-        # For testing purposes, just return the content
-        preview_content = readme_content[:500] + "..." if len(readme_content) > 500 else readme_content
+        # Return a preview of the content
+        preview = readme_content[:500] + "..." if len(readme_content) > 500 else readme_content
+        
+        # Return a plain dictionary response
         return {
-            "message": "README.md generated successfully (testing mode)",
-            "commit_url": None,
-            "preview": preview_content
+            "status": "success",
+            "message": "README generated successfully",
+            "preview": preview
         }
     except Exception as e:
         import traceback
-        error_detail = f"Failed to export awesome list: {str(e)}\n{traceback.format_exc()}"
+        error_detail = f"Export failed: {str(e)}\n{traceback.format_exc()}"
         print(error_detail)
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Failed to export awesome list: {str(e)}",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Export failed: {str(e)}",
         )

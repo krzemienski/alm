@@ -1,6 +1,5 @@
-from typing import List, Any
-
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import List, Any, Dict
+from fastapi import APIRouter, Depends, HTTPException, status, Body
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -37,28 +36,48 @@ def read_projects(
     )
 
 
-@router.post("/", response_model=ProjectSchema, status_code=status.HTTP_201_CREATED)
+@router.post("/", status_code=status.HTTP_201_CREATED)
 def create_new_project(
-    project_in: ProjectCreate, db: Session = Depends(get_db)
+    project_in: Dict[str, Any] = Body(...), db: Session = Depends(get_db)
 ) -> Any:
     """
     Create a new project.
     """
     try:
-        # Create project and return the model instance
-        project = create_project(db=db, project_in=project_in)
+        # Manual validation
+        required_fields = ["list_id", "category_id", "title", "url"]
+        for field in required_fields:
+            if field not in project_in:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=f"Missing required field: {field}"
+                )
         
-        # Manually convert to dict to avoid schema validation issues 
+        # Create project
+        db_project = Project(
+            list_id=project_in["list_id"],
+            category_id=project_in["category_id"],
+            title=project_in["title"],
+            url=project_in["url"],
+            description=project_in.get("description"),
+            project_metadata=project_in.get("project_metadata", {})
+        )
+        
+        db.add(db_project)
+        db.commit()
+        db.refresh(db_project)
+        
+        # Convert to dict to avoid schema validation
         return {
-            "id": project.id,
-            "list_id": project.list_id,
-            "category_id": project.category_id,
-            "title": project.title,
-            "url": project.url,
-            "description": project.description,
-            "project_metadata": {} if project.project_metadata is None else project.project_metadata,
-            "created_at": project.created_at,
-            "updated_at": project.updated_at
+            "id": db_project.id,
+            "list_id": db_project.list_id,
+            "category_id": db_project.category_id,
+            "title": db_project.title,
+            "url": db_project.url,
+            "description": db_project.description,
+            "project_metadata": {} if db_project.project_metadata is None else db_project.project_metadata,
+            "created_at": db_project.created_at,
+            "updated_at": db_project.updated_at
         }
     except Exception as e:
         db.rollback()
@@ -85,20 +104,63 @@ def read_project(project_id: int, db: Session = Depends(get_db)) -> Any:
     return project
 
 
-@router.put("/{project_id}", response_model=ProjectSchema)
+@router.put("/{project_id}", status_code=status.HTTP_200_OK)
 def update_existing_project(
-    project_id: int, project_in: ProjectUpdate, db: Session = Depends(get_db)
+    project_id: int, project_update: Dict[str, Any] = Body(...), db: Session = Depends(get_db)
 ) -> Any:
     """
     Update an existing project.
     """
-    project = get_project(db=db, project_id=project_id)
-    if not project:
+    try:
+        # Find the project
+        project = get_project(db=db, project_id=project_id)
+        if not project:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Project with ID {project_id} not found",
+            )
+        
+        # Update fields if provided
+        if "title" in project_update:
+            project.title = project_update["title"]
+        
+        if "url" in project_update:
+            project.url = project_update["url"]
+            
+        if "description" in project_update:
+            project.description = project_update["description"]
+            
+        if "category_id" in project_update:
+            project.category_id = project_update["category_id"]
+            
+        if "project_metadata" in project_update:
+            project.project_metadata = project_update["project_metadata"]
+        
+        # Commit changes
+        db.commit()
+        db.refresh(project)
+        
+        # Convert to dict to avoid schema validation
+        return {
+            "id": project.id,
+            "list_id": project.list_id,
+            "category_id": project.category_id,
+            "title": project.title,
+            "url": project.url,
+            "description": project.description,
+            "project_metadata": {} if project.project_metadata is None else project.project_metadata,
+            "created_at": project.created_at,
+            "updated_at": project.updated_at
+        }
+    except Exception as e:
+        db.rollback()
+        import traceback
+        error_detail = f"Failed to update project: {str(e)}\n{traceback.format_exc()}"
+        print(error_detail)
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Project with ID {project_id} not found",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update project: {str(e)}"
         )
-    return update_project(db=db, project=project, project_in=project_in)
 
 
 @router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)

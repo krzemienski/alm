@@ -16,7 +16,9 @@ import {
   Collapse,
   IconButton,
   Snackbar,
-  Alert
+  Alert,
+  TextField,
+  InputAdornment
 } from '@mui/material';
 import { 
   ExpandMore as ExpandMoreIcon,
@@ -26,11 +28,14 @@ import {
   Delete as DeleteIcon,
   GitHub as GitHubIcon,
   ImportExport as ImportExportIcon,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Search as SearchIcon
 } from '@mui/icons-material';
+import AppLayout from '@/components/Layout/AppLayout';
+import PageHeader from '@/components/UI/PageHeader';
+import ConfirmationDialog from '@/components/UI/ConfirmationDialog';
 import { awesomeListsApi, categoriesApi, projectsApi } from '@/services/api';
 import { AwesomeList, CategoryWithSubcategories, Project } from '@/types';
-import AppLayout from '@/components/Layout/AppLayout';
 
 interface PageProps {
   params: {
@@ -42,17 +47,20 @@ export default function AwesomeListDetail({ params }: PageProps) {
   const listId = parseInt(params.id);
   const [awesomeList, setAwesomeList] = useState<AwesomeList | null>(null);
   const [categories, setCategories] = useState<CategoryWithSubcategories[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  const [projects, setProjects] = useState<Record<number, Project[]>>({});
   const [expandedCategories, setExpandedCategories] = useState<Record<number, boolean>>({});
   const [expandedSubcategories, setExpandedSubcategories] = useState<Record<number, boolean>>({});
-  const [projects, setProjects] = useState<Record<number, Project[]>>({});
+  const [loading, setLoading] = useState<boolean>(true);
   const [exportStatus, setExportStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [notificationOpen, setNotificationOpen] = useState<boolean>(false);
   const [notificationMessage, setNotificationMessage] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
+  const [deleteItemType, setDeleteItemType] = useState<'category' | 'project'>('category');
+  const [deleteItemId, setDeleteItemId] = useState<number | null>(null);
+  const [deleteItemName, setDeleteItemName] = useState<string>('');
   const router = useRouter();
 
-  // Fetch awesome list and categories on component mount
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -104,7 +112,7 @@ export default function AwesomeListDetail({ params }: PageProps) {
     
     // If expanding, fetch projects for this category
     if (!expandedCategories[categoryId]) {
-      fetchProjectsForCategory(categoryId);
+      fetchProjectsByCategory(categoryId);
     }
   };
 
@@ -116,11 +124,11 @@ export default function AwesomeListDetail({ params }: PageProps) {
     
     // If expanding, fetch projects for this subcategory
     if (!expandedSubcategories[subcategoryId]) {
-      fetchProjectsForCategory(subcategoryId);
+      fetchProjectsByCategory(subcategoryId);
     }
   };
 
-  const fetchProjectsForCategory = async (categoryId: number) => {
+  const fetchProjectsByCategory = async (categoryId: number) => {
     try {
       // Check if we already have these projects
       if (projects[categoryId]) return;
@@ -145,6 +153,77 @@ export default function AwesomeListDetail({ params }: PageProps) {
   const handleCloseNotification = () => {
     setNotificationOpen(false);
   };
+
+  const openDeleteDialog = (type: 'category' | 'project', id: number, name: string) => {
+    setDeleteItemType(type);
+    setDeleteItemId(id);
+    setDeleteItemName(name);
+    setDeleteDialogOpen(true);
+  };
+
+  const closeDeleteDialog = () => {
+    setDeleteDialogOpen(false);
+    setDeleteItemId(null);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteItemId) return;
+    
+    try {
+      if (deleteItemType === 'category') {
+        await categoriesApi.delete(deleteItemId);
+        await fetchCategories(); // Refresh categories after delete
+        
+        setNotificationMessage(`Category "${deleteItemName}" deleted successfully.`);
+      } else {
+        await projectsApi.delete(deleteItemId);
+        // Refresh all projects for all expanded categories
+        Object.keys(expandedCategories).forEach(categoryId => {
+          if (expandedCategories[Number(categoryId)]) {
+            fetchProjectsByCategory(Number(categoryId));
+          }
+        });
+        
+        setNotificationMessage(`Project "${deleteItemName}" deleted successfully.`);
+      }
+      
+      setNotificationOpen(true);
+    } catch (error) {
+      console.error(`Error deleting ${deleteItemType}:`, error);
+      setNotificationMessage(`Failed to delete ${deleteItemType}. Please try again.`);
+      setNotificationOpen(true);
+    } finally {
+      closeDeleteDialog();
+    }
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value.toLowerCase());
+  };
+
+  const filterBySearch = (items: any[], key: string) => {
+    if (!searchQuery) return items;
+    return items.filter(item => 
+      item[key].toLowerCase().includes(searchQuery) || 
+      (item.description && item.description.toLowerCase().includes(searchQuery))
+    );
+  };
+
+  const filteredCategories = searchQuery 
+    ? categories.filter(category => 
+        category.name.toLowerCase().includes(searchQuery) ||
+        (category.subcategories && category.subcategories.some(sub => 
+          sub.name.toLowerCase().includes(searchQuery)
+        )) ||
+        Object.keys(projects).some(catId => 
+          projects[Number(catId)] && 
+          projects[Number(catId)].some(project => 
+            project.title.toLowerCase().includes(searchQuery) || 
+            (project.description && project.description.toLowerCase().includes(searchQuery))
+          )
+        )
+      )
+    : categories;
 
   if (loading) {
     return (
@@ -176,28 +255,29 @@ export default function AwesomeListDetail({ params }: PageProps) {
 
   return (
     <AppLayout>
-      <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          {awesomeList.title}
-        </Typography>
-        <Box>
-          <Button 
-            variant="outlined" 
-            sx={{ mr: 2 }}
-            onClick={() => router.push(`/awesome-lists/${listId}/edit`)}
-            startIcon={<EditIcon />}
-          >
-            Edit
-          </Button>
-          <Button 
-            variant="contained" 
-            onClick={handleExport}
-            startIcon={<ImportExportIcon />}
-          >
-            Export to GitHub
-          </Button>
-        </Box>
-      </Box>
+      <PageHeader 
+        title={awesomeList.title}
+        subtitle="Manage categories and projects"
+        action={
+          <Box display="flex" gap={2}>
+            <Button 
+              variant="contained" 
+              startIcon={<ImportExportIcon />}
+              onClick={handleExport}
+              disabled={exportStatus === 'loading'}
+            >
+              {exportStatus === 'loading' ? 'Exporting...' : 'Export README'}
+            </Button>
+            <Button 
+              variant="outlined" 
+              onClick={() => router.push(`/awesome-lists/${listId}/edit`)}
+              startIcon={<EditIcon />}
+            >
+              Edit List
+            </Button>
+          </Box>
+        }
+      />
 
       <Paper sx={{ p: 4, mb: 4 }}>
         <Typography variant="body1" paragraph>
@@ -217,26 +297,42 @@ export default function AwesomeListDetail({ params }: PageProps) {
         <Typography variant="h5" component="h2" gutterBottom>
           Categories
         </Typography>
-        <Button 
-          variant="outlined" 
-          size="small"
-          onClick={() => router.push(`/awesome-lists/${listId}/categories/new`)}
-          startIcon={<AddIcon />}
-        >
-          Add Category
-        </Button>
+        <Box display="flex" gap={2}>
+          <TextField
+            placeholder="Search categories and projects..."
+            size="small"
+            value={searchQuery}
+            onChange={handleSearchChange}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
+            sx={{ width: 300 }}
+          />
+          <Button 
+            variant="outlined" 
+            size="small"
+            onClick={() => router.push(`/awesome-lists/${listId}/categories/new`)}
+            startIcon={<AddIcon />}
+          >
+            Add Category
+          </Button>
+        </Box>
       </Box>
 
-      {categories.length === 0 ? (
+      {filteredCategories.length === 0 ? (
         <Paper sx={{ p: 4, textAlign: 'center' }}>
           <Typography variant="body1" color="text.secondary">
-            No categories found. Add a category to get started.
+            {searchQuery ? 'No matching categories or projects found.' : 'No categories found. Add a category to get started.'}
           </Typography>
         </Paper>
       ) : (
         <Paper>
           <List component="div" disablePadding>
-            {categories.map((category) => (
+            {filteredCategories.map((category) => (
               <Box key={category.id}>
                 <ListItem
                   sx={{ 
@@ -252,6 +348,13 @@ export default function AwesomeListDetail({ params }: PageProps) {
                   <IconButton size="small" onClick={() => router.push(`/awesome-lists/${listId}/categories/${category.id}/edit`)}>
                     <EditIcon fontSize="small" />
                   </IconButton>
+                  <IconButton 
+                    size="small" 
+                    color="error"
+                    onClick={() => openDeleteDialog('category', category.id, category.name)}
+                  >
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
                   <Button 
                     size="small" 
                     startIcon={<AddIcon />}
@@ -266,7 +369,7 @@ export default function AwesomeListDetail({ params }: PageProps) {
                 <Collapse in={expandedCategories[category.id]} timeout="auto" unmountOnExit>
                   {projects[category.id] && projects[category.id].length > 0 ? (
                     <List component="div" disablePadding>
-                      {projects[category.id].map((project) => (
+                      {filterBySearch(projects[category.id], 'title').map((project) => (
                         <ListItem key={project.id} sx={{ pl: 4, backgroundColor: 'action.hover' }}>
                           <ListItemIcon>
                             <LinkIcon />
@@ -277,6 +380,13 @@ export default function AwesomeListDetail({ params }: PageProps) {
                           />
                           <IconButton size="small" onClick={() => router.push(`/awesome-lists/${listId}/projects/${project.id}/edit`)}>
                             <EditIcon fontSize="small" />
+                          </IconButton>
+                          <IconButton 
+                            size="small" 
+                            color="error"
+                            onClick={() => openDeleteDialog('project', project.id, project.title)}
+                          >
+                            <DeleteIcon fontSize="small" />
                           </IconButton>
                         </ListItem>
                       ))}
@@ -292,7 +402,7 @@ export default function AwesomeListDetail({ params }: PageProps) {
                 {category.subcategories && category.subcategories.length > 0 && (
                   <Collapse in={expandedCategories[category.id]} timeout="auto" unmountOnExit>
                     <List component="div" disablePadding>
-                      {category.subcategories.map((subcategory) => (
+                      {filterBySearch(category.subcategories, 'name').map((subcategory) => (
                         <Box key={subcategory.id}>
                           <ListItem sx={{ pl: 4, backgroundColor: 'rgba(255, 255, 255, 0.05)' }}>
                             <ListItemIcon onClick={() => handleToggleSubcategory(subcategory.id)} sx={{ cursor: 'pointer' }}>
@@ -301,6 +411,13 @@ export default function AwesomeListDetail({ params }: PageProps) {
                             <ListItemText primary={subcategory.name} />
                             <IconButton size="small" onClick={() => router.push(`/awesome-lists/${listId}/categories/${subcategory.id}/edit`)}>
                               <EditIcon fontSize="small" />
+                            </IconButton>
+                            <IconButton 
+                              size="small" 
+                              color="error"
+                              onClick={() => openDeleteDialog('category', subcategory.id, subcategory.name)}
+                            >
+                              <DeleteIcon fontSize="small" />
                             </IconButton>
                             <Button 
                               size="small" 
@@ -316,7 +433,7 @@ export default function AwesomeListDetail({ params }: PageProps) {
                           <Collapse in={expandedSubcategories[subcategory.id]} timeout="auto" unmountOnExit>
                             {projects[subcategory.id] && projects[subcategory.id].length > 0 ? (
                               <List component="div" disablePadding>
-                                {projects[subcategory.id].map((project) => (
+                                {filterBySearch(projects[subcategory.id], 'title').map((project) => (
                                   <ListItem key={project.id} sx={{ pl: 8, backgroundColor: 'rgba(255, 255, 255, 0.02)' }}>
                                     <ListItemIcon>
                                       <LinkIcon />
@@ -327,6 +444,13 @@ export default function AwesomeListDetail({ params }: PageProps) {
                                     />
                                     <IconButton size="small" onClick={() => router.push(`/awesome-lists/${listId}/projects/${project.id}/edit`)}>
                                       <EditIcon fontSize="small" />
+                                    </IconButton>
+                                    <IconButton 
+                                      size="small" 
+                                      color="error"
+                                      onClick={() => openDeleteDialog('project', project.id, project.title)}
+                                    >
+                                      <DeleteIcon fontSize="small" />
                                     </IconButton>
                                   </ListItem>
                                 ))}
@@ -347,6 +471,19 @@ export default function AwesomeListDetail({ params }: PageProps) {
           </List>
         </Paper>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmationDialog
+        open={deleteDialogOpen}
+        title={`Delete ${deleteItemType === 'category' ? 'Category' : 'Project'}`}
+        message={`Are you sure you want to delete "${deleteItemName}"? This action cannot be undone.${
+          deleteItemType === 'category' ? ' All projects in this category will also be deleted.' : ''
+        }`}
+        confirmLabel="Delete"
+        severity="error"
+        onConfirm={handleDeleteConfirm}
+        onCancel={closeDeleteDialog}
+      />
 
       <Snackbar 
         open={notificationOpen} 

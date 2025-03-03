@@ -6,23 +6,23 @@ from app.schemas.project import ProjectCreate, ProjectUpdate
 
 
 def get_projects(
-    db: Session, 
-    list_id: Optional[int] = None, 
-    category_id: Optional[int] = None, 
-    skip: int = 0, 
+    db: Session,
+    list_id: Optional[int] = None,
+    category_id: Optional[int] = None,
+    skip: int = 0,
     limit: int = 100
 ) -> List[Project]:
     """
     Retrieve projects with optional filtering by list_id and category_id.
     """
     query = db.query(Project)
-    
+
     if list_id is not None:
         query = query.filter(Project.list_id == list_id)
-    
+
     if category_id is not None:
         query = query.filter(Project.category_id == category_id)
-    
+
     return query.offset(skip).limit(limit).all()
 
 
@@ -52,11 +52,11 @@ def create_project(db: Session, project_in: ProjectCreate) -> Project:
 
 
 def create_project_from_import(
-    db: Session, 
-    list_id: int, 
-    category_id: int, 
-    title: str, 
-    url: str, 
+    db: Session,
+    list_id: int,
+    category_id: int,
+    title: str,
+    url: str,
     description: str
 ) -> Project:
     """
@@ -68,6 +68,7 @@ def create_project_from_import(
         title=title,
         url=url,
         description=description,
+        project_metadata={},  # Initialize with empty dict to avoid validation errors
     )
     db.add(db_project)
     db.commit()
@@ -82,14 +83,14 @@ def update_project(
     Update a project.
     """
     update_data = project_in.dict(exclude_unset=True)
-    
+
     for field, value in update_data.items():
         if field == "url" and value is not None:
             value = str(value)
         elif field == "metadata":
             field = "project_metadata"
         setattr(project, field, value)
-    
+
     db.add(project)
     db.commit()
     db.refresh(project)
