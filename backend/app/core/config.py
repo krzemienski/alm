@@ -1,8 +1,8 @@
 import os
 import json
-from typing import List
+from typing import List, Optional
 
-from pydantic import AnyHttpUrl, field_validator
+from pydantic import AnyHttpUrl, validator
 from pydantic_settings import BaseSettings
 
 
@@ -13,8 +13,8 @@ class Settings(BaseSettings):
     # CORS
     CORS_ORIGINS: List[str] = ["http://localhost:3000"]
 
-    @field_validator("CORS_ORIGINS", mode="before")
-    def parse_cors_origins(self, v):
+    @validator("CORS_ORIGINS", pre=True)
+    def parse_cors_origins(cls, v):
         if isinstance(v, str):
             try:
                 # Try to parse as JSON
@@ -29,6 +29,11 @@ class Settings(BaseSettings):
 
     # GitHub
     GITHUB_ACCESS_TOKEN: str = os.getenv("GITHUB_ACCESS_TOKEN", "")
+
+    # AI Categorization
+    OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY", "")
+    OLLAMA_BASE_URL: Optional[str] = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+    GITHUB_TOKEN: Optional[str] = os.getenv("GITHUB_TOKEN", "")
 
     class Config:
         env_file = ".env"

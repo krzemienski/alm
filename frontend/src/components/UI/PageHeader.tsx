@@ -12,6 +12,7 @@ interface PageHeaderProps {
   onButtonClick?: () => void;
   buttonHref?: string;
   buttonProps?: ButtonProps;
+  action?: ReactNode;
   sx?: SxProps<Theme>;
 }
 
@@ -23,6 +24,7 @@ export default function PageHeader({
   onButtonClick,
   buttonHref,
   buttonProps,
+  action,
   sx
 }: PageHeaderProps) {
   return (
@@ -44,7 +46,9 @@ export default function PageHeader({
         )}
       </Box>
       
-      {buttonText && (buttonHref || onButtonClick) && (
+      {action ? (
+        action
+      ) : buttonText && (buttonHref || onButtonClick) && (
         buttonHref ? (
           <Link href={buttonHref} passHref style={{ textDecoration: 'none' }}>
             <Button

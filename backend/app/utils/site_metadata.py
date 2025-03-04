@@ -1,7 +1,7 @@
 """
 Utility functions to extract website metadata and suggest categories based on site content.
 """
-import requests
+import httpx
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
 import re
@@ -12,7 +12,7 @@ from app.models.category import Category
 
 logger = logging.getLogger(__name__)
 
-def fetch_site_metadata(url: str) -> Dict[str, Any]:
+async def fetch_site_metadata(url: str) -> Dict[str, Any]:
     """
     Fetch metadata from a website including title, description, and keywords.
     
@@ -33,38 +33,51 @@ def fetch_site_metadata(url: str) -> Dict[str, Any]:
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
         }
-        response = requests.get(url, headers=headers, timeout=10)
-        response.raise_for_status()
         
-        soup = BeautifulSoup(response.text, 'html.parser')
-        
-        # Try to get title
-        if soup.title:
-            metadata["title"] = soup.title.string.strip()
-        
-        # Try to get description from meta tags
-        description_meta = soup.find("meta", attrs={"name": "description"}) or soup.find("meta", attrs={"property": "og:description"})
-        if description_meta and description_meta.get("content"):
-            metadata["description"] = description_meta["content"].strip()
-        
-        # Try to get keywords from meta tags
-        keywords_meta = soup.find("meta", attrs={"name": "keywords"})
-        if keywords_meta and keywords_meta.get("content"):
-            keywords = [k.strip() for k in keywords_meta["content"].split(",")]
-            metadata["keywords"] = keywords
-
-        # If we couldn't find a description, extract one from the first paragraph
-        if not metadata["description"]:
-            first_p = soup.find("p")
-            if first_p:
-                text = first_p.get_text().strip()
-                if len(text) > 20:  # Ensure it's a substantial paragraph
-                    # Limit to reasonable length
-                    metadata["description"] = text[:300] + ("..." if len(text) > 300 else "")
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, headers=headers, timeout=10.0)
+            response.raise_for_status()
+            
+            soup = BeautifulSoup(response.text, 'html.parser')
+            
+            # Try to get title
+            if soup.title:
+                metadata["title"] = soup.title.string.strip()
+            
+            # Try to get description from meta tags
+            description_meta = soup.find("meta", attrs={"name": "description"}) or soup.find("meta", attrs={"property": "og:description"})
+            if description_meta and description_meta.get("content"):
+                metadata["description"] = description_meta["content"].strip()
+            
+            # Try to get keywords from meta tags
+            keywords_meta = soup.find("meta", attrs={"name": "keywords"})
+            if keywords_meta and keywords_meta.get("content"):
+                keywords = [k.strip() for k in keywords_meta["content"].split(",")]
+                metadata["keywords"] = keywords
+            
+            # If no metadata found, try to extract some content
+            if not metadata["description"]:
+                # Try to get first paragraph with meaningful content
+                paragraphs = soup.find_all('p')
+                for p in paragraphs:
+                    text = p.text.strip()
+                    if len(text) > 50:  # Only consider paragraphs with substantial content
+                        metadata["description"] = text[:300] + "..." if len(text) > 300 else text
+                        break
         
     except Exception as e:
         logger.error(f"Error fetching metadata for {url}: {str(e)}")
         metadata["error"] = str(e)
+        
+        # Try to get at least a title from the URL
+        if not metadata["title"]:
+            parsed_url = urlparse(url)
+            path_parts = parsed_url.path.split('/')
+            repo_name = next((part for part in reversed(path_parts) if part), '')
+            if repo_name:
+                # Convert kebab-case or snake_case to words
+                title = re.sub(r'[-_]', ' ', repo_name).title()
+                metadata["title"] = title
     
     return metadata
 

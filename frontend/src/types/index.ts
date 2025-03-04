@@ -131,3 +131,28 @@ export interface FormState {
 export interface ImportRequest {
   repository_url: string;
 }
+
+// AI Categorization types
+export interface AICategoryResult {
+  url: string;
+  title: string;
+  description: string;
+  category: string;
+  subcategory: string | null;
+  processed: boolean;
+  error?: string | null;
+}
+
+export interface AIBatchRequest {
+  urls: string[];
+  use_ollama?: boolean;
+}
+
+export interface AIBatchResponse {
+  results: AICategoryResult[];
+}
+
+export interface AICategorizeRequest {
+  url: string;
+  use_ollama?: boolean;
+}

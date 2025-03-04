@@ -190,6 +190,26 @@ export const metadataApi = {
       { list_id: listId, urls }
     );
     return response.data;
+  },
+  
+  // AI-powered categorization for a single URL
+  aiCategorize: async (listId: number, url: string, useOllama: boolean = false): Promise<any> => {
+    const response = await api.post(
+      ensureTrailingSlash('/metadata/ai-categorize'),
+      { url, use_ollama: useOllama },
+      { params: { list_id: listId } }
+    );
+    return response.data;
+  },
+  
+  // AI-powered batch categorization for multiple URLs
+  aiBatchCategorize: async (listId: number, urls: string[], useOllama: boolean = false): Promise<any[]> => {
+    const response = await api.post(
+      ensureTrailingSlash('/metadata/ai-batch-categorize'),
+      { urls, use_ollama: useOllama },
+      { params: { list_id: listId } }
+    );
+    return response.data;
   }
 };
 

@@ -56,6 +56,7 @@ export default function AwesomeListDetail({ params }: PageProps) {
   const [notificationOpen, setNotificationOpen] = useState<boolean>(false);
   const [notificationMessage, setNotificationMessage] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [error, setError] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
   const [deleteItemType, setDeleteItemType] = useState<'category' | 'project'>('category');
   const [deleteItemId, setDeleteItemId] = useState<number | null>(null);
@@ -144,6 +145,33 @@ export default function AwesomeListDetail({ params }: PageProps) {
       // Show notification
       setNotificationMessage(`Failed to load projects for this category.`);
       setNotificationOpen(true);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      // Fetch categories tree
+      const categoriesData = await categoriesApi.getTree(listId);
+      setCategories(categoriesData);
+      
+      // Initialize expanded state for categories
+      const initialExpandedCategories: Record<number, boolean> = {};
+      const initialExpandedSubcategories: Record<number, boolean> = {};
+      
+      categoriesData.forEach(category => {
+        initialExpandedCategories[category.id] = false;
+        if (category.subcategories && Array.isArray(category.subcategories)) {
+          category.subcategories.forEach(subcategory => {
+            initialExpandedSubcategories[subcategory.id] = false;
+          });
+        }
+      });
+      
+      setExpandedCategories(initialExpandedCategories);
+      setExpandedSubcategories(initialExpandedSubcategories);
+    } catch (err) {
+      console.error('Failed to fetch categories:', err);
+      setError('Failed to load category data. Please try again later.');
     }
   };
 

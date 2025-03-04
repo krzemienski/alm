@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.utils.site_metadata import fetch_site_metadata, suggest_category
 from app.db.session import get_db
+from app.services.ai_categorization_service import AICategorization
 
 router = APIRouter()
 
@@ -151,3 +152,70 @@ async def batch_characterize_urls(
         results.extend(batch_results)
     
     return results
+
+
+class AIBatchUrlRequest(BaseModel):
+    """Request for batch AI categorization of URLs."""
+    urls: List[str]
+    use_ollama: bool = False
+
+class SingleUrlAIRequest(BaseModel):
+    """Request for AI categorization of a single URL."""
+    url: str
+    use_ollama: bool = False
+
+@router.post("/ai-categorize", response_model=Dict[str, Any])
+async def ai_categorize_url(
+    list_id: int,
+    request: SingleUrlAIRequest = Body(...),
+    db: Session = Depends(get_db)
+) -> Dict[str, Any]:
+    """
+    AI-powered categorization for a single URL.
+    Uses either OpenAI or Ollama to suggest categories and generate a summary.
+    
+    Args:
+        list_id: ID of the awesome list
+        request: Request with URL and AI backend preference
+        
+    Returns:
+        Dictionary with metadata, suggested category, and summary
+    """
+    try:
+        categorization_service = AICategorization(db)
+        result = await categorization_service.process_url(
+            request.url, 
+            list_id, 
+            request.use_ollama
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error processing URL: {str(e)}")
+
+@router.post("/ai-batch-categorize", response_model=List[Dict[str, Any]])
+async def ai_batch_categorize_urls(
+    list_id: int,
+    request: AIBatchUrlRequest = Body(...),
+    db: Session = Depends(get_db)
+) -> List[Dict[str, Any]]:
+    """
+    AI-powered batch categorization for multiple URLs.
+    Uses either OpenAI or Ollama to suggest categories and generate summaries.
+    
+    Args:
+        list_id: ID of the awesome list
+        request: Request with URLs and AI backend preference
+        
+    Returns:
+        List of dictionaries with metadata, suggested categories, and summaries
+    """
+    try:
+        categorization_service = AICategorization(db)
+        results = await categorization_service.process_batch_urls(
+            request.urls, 
+            list_id, 
+            request.use_ollama
+        )
+        return results
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error processing batch URLs: {str(e)}")

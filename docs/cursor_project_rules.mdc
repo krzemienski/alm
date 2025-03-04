@@ -1,0 +1,107 @@
+---
+description: Apply these rules when creating the project
+globs:
+alwaysApply: true
+---
+## Project Overview
+
+*   **Type:** cursor_project_rules
+*   **Description:** The Awesome List Manager (alm) is a web application designed to generate, manage, and maintain curated GitHub repositories following a strict Markdown README specification. It enables users to import an awesome list via GitHub, edit its structured content (with main categories, subcategories, and projects), and then export an updated, linted README back to GitHub.
+*   **Primary Goal:** Ensure awesome lists remain high quality and consistent by automating the import, validation (via awesome-lint/awesome_bot), editing, and export processes while maintaining seamless GitHub integration.
+
+## Project Structure
+
+### Framework-Specific Routing
+
+*   **Directory Rules:**
+
+    *   **next.js@14 (App Router):** Routes should be defined under the `app/` directory using the nested folder convention. For instance:
+
+        *   Example 1: `app/[route]/page.tsx` for structured dynamic routes (e.g., `app/admin/page.tsx` for the admin panel).
+        *   Example 2: `app/api/[endpoint]/route.ts` for API route handlers.
+
+### Core Directories
+
+*   **Versioned Structure:**
+
+    *   **app/api:** Next.js 14 API routes implemented as Route Handlers for backend CRUD operations, metadata scraping, validation, and GitHub sync tasks.
+    *   **app/dashboard:** Contains the main dashboard components and layouts (e.g., layouts and pages for list viewing and editing in the dark-themed UI).
+    *   **app/auth:** Houses GitHub authentication pages and token/OAuth based login integrations.
+
+### Key Files
+
+*   **Stack-Versioned Patterns:**
+
+    *   **app/dashboard/layout.tsx:** Root layout for dashboard pages using Next.js 14 App Router conventions.
+    *   **app/api/import/route.ts:** Implements the import endpoint using Next.js API routing.
+    *   **app/api/publish/route.ts:** Handles the export and GitHub sync processes.
+
+## Tech Stack Rules
+
+*   **Version Enforcement:**
+
+    *   **next@14:** Enforce usage of the App Router. Avoid legacy `pages/` directory structures.
+    *   **<python@3.x> with flask:** Ensure RESTful API endpoints are built following PEP 8 guidelines and integrate robust error handling.
+    *   **postgresql:** Use consistent schema definitions and migrations for storing awesome list, category, and project data.
+    *   **docker & docker_compose:** Containerize the project with dedicated Dockerfiles for frontend and backend along with a Docker Compose file to orchestrate the full stack.
+    *   **oauth:** Enforce secure OAuth and token-based GitHub integrations to facilitate repository interactions.
+
+## PRD Compliance
+
+*   **Non-Negotiable:**
+
+    *   "The Awesome List Manager (alm) is designed to help users import, validate, edit, and export awesome lists via GitHub while ensuring that the Markdown output adheres strictly to the awesome list specification."
+    *   Implementation must support full CRUD operations, robust error handling, automatic linting, metadata scraping, and secure GitHub integration.
+
+## App Flow Integration
+
+*   **Stack-Aligned Flow:**
+
+    *   Example: "Next.js 14 Auth Flow → `app/auth/login/page.tsx` uses server actions and OAuth to authenticate the user before providing access to the admin panel."
+    *   Importing the awesome list, editing content (with real-time search and filtering), and publishing back to GitHub follow clear, modular routes.
+
+## Best Practices
+
+*   **next.js**
+
+    *   Use the App Router (`app/` directory) exclusively for route handling and page organization.
+    *   Leverage server actions for secure operations (e.g., GitHub sync and API calls).
+    *   Modularize components and maintain separation of concerns between UI, data fetching, and business logic.
+
+*   **material_ui**
+
+    *   Keep the dark theme consistent across all pages for a seamless user experience.
+    *   Use Material UI components for responsive design and accessibility.
+    *   Prefer default styling and customize only when necessary to enhance usability.
+
+*   **python & flask**
+
+    *   Adhere strictly to PEP 8 standards for clean and maintainable code.
+    *   Implement comprehensive error handling and input validation, especially for external API calls (GitHub, metadata scraping).
+    *   Structure API endpoints to conform with RESTful practices and include detailed logging.
+
+*   **postgresql**
+
+    *   Use consistent naming conventions and version-controlled migration scripts.
+    *   Optimize queries and ensure proper indexing for high-performance data retrieval.
+    *   Maintain data integrity by enforcing foreign key relationships between awesome lists, categories, and projects.
+
+*   **docker & docker_compose**
+
+    *   Separate frontend and backend services into distinct containers for isolated environments.
+    *   Use health checks and environment-specific configurations to ensure smooth local and production deployments.
+    *   Document container orchestration to assist in troubleshooting and scaling.
+
+*   **oauth**
+
+    *   Implement secure authentication flows with clear error messages for failed login attempts.
+    *   Use established libraries for OAuth integration and token management.
+    *   Regularly update security dependencies and perform audits to ensure compliance.
+
+## Rules
+
+*   Derive folder/file patterns directly from tech stack document versions.
+*   If Next.js 14 App Router is used: Enforce the `app/` directory with nested route folders. Do not mix with Pages Router structures.
+*   For flask-based endpoints, separate REST API routes into distinct modules respecting the microservice architecture.
+*   Ensure consistency in containerization by mirroring environment configurations across Dockerfiles and Docker Compose.
+*   Never mix version patterns (e.g., no `pages/` in App Router projects). Each tool’s version-specific rules must be strictly followed.
