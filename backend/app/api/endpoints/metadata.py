@@ -21,7 +21,7 @@ async def get_site_metadata(
     This endpoint can be used when adding new links to prefill form fields.
     """
     try:
-        metadata = fetch_site_metadata(str(url))
+        metadata = await fetch_site_metadata(str(url))
         if metadata.get("error"):
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -49,22 +49,22 @@ async def suggest_category_for_url(
     try:
         # First fetch site metadata if description is not provided
         if not description:
-            metadata = fetch_site_metadata(str(url))
+            metadata = await fetch_site_metadata(str(url))
             description = metadata.get("description")
-        
+
         # Suggest a category
         category_id, confidence = suggest_category(
-            db=db, 
-            list_id=list_id, 
-            url=str(url), 
+            db=db,
+            list_id=list_id,
+            url=str(url),
             description=description
         )
-        
+
         return {
             "category_id": category_id,
             "confidence": confidence,
         }
-        
+
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -96,7 +96,8 @@ async def batch_characterize_urls(
     This endpoint is useful for batch characterization of multiple links at once.
     """
     results = []
-    
+
+    # Use an async function
     async def process_url(url: str) -> UrlAnalysisResult:
         try:
             # Validate URL format
@@ -107,16 +108,16 @@ async def batch_characterize_urls(
                         url=url,
                         error="Invalid URL format. URL must start with http:// or https://"
                     )
-                    
+
                 # Fetch metadata
-                metadata = fetch_site_metadata(url)
-                
+                metadata = await fetch_site_metadata(url)
+
                 if metadata.get("error"):
                     return UrlAnalysisResult(
                         url=url,
                         error=f"Failed to fetch metadata: {metadata['error']}"
                     )
-                
+
                 # Get category suggestion
                 category_id, confidence = suggest_category(
                     db=db,
@@ -124,7 +125,7 @@ async def batch_characterize_urls(
                     url=url,
                     description=metadata.get("description")
                 )
-                
+
                 return UrlAnalysisResult(
                     url=url,
                     title=metadata.get("title"),
@@ -132,7 +133,7 @@ async def batch_characterize_urls(
                     category_id=category_id,
                     confidence=confidence
                 )
-                
+
             except Exception as e:
                 return UrlAnalysisResult(
                     url=url,
@@ -143,14 +144,15 @@ async def batch_characterize_urls(
                 url=url,
                 error=f"Unexpected error: {str(e)}"
             )
-    
-    # Process URLs concurrently (but not too many at once to avoid overwhelming the system)
+
+    # Process URLs in batches (but not all at once to avoid overwhelming the system)
     batch_size = 5  # Process 5 URLs at a time
     for i in range(0, len(request.urls), batch_size):
         batch = request.urls[i:i+batch_size]
+        # Process URLs concurrently
         batch_results = await asyncio.gather(*[process_url(url) for url in batch])
         results.extend(batch_results)
-    
+
     return results
 
 
@@ -173,19 +175,19 @@ async def ai_categorize_url(
     """
     AI-powered categorization for a single URL.
     Uses either OpenAI or Ollama to suggest categories and generate a summary.
-    
+
     Args:
         list_id: ID of the awesome list
         request: Request with URL and AI backend preference
-        
+
     Returns:
         Dictionary with metadata, suggested category, and summary
     """
     try:
         categorization_service = AICategorization(db)
         result = await categorization_service.process_url(
-            request.url, 
-            list_id, 
+            request.url,
+            list_id,
             request.use_ollama
         )
         return result
@@ -201,19 +203,19 @@ async def ai_batch_categorize_urls(
     """
     AI-powered batch categorization for multiple URLs.
     Uses either OpenAI or Ollama to suggest categories and generate summaries.
-    
+
     Args:
         list_id: ID of the awesome list
         request: Request with URLs and AI backend preference
-        
+
     Returns:
         List of dictionaries with metadata, suggested categories, and summaries
     """
     try:
         categorization_service = AICategorization(db)
         results = await categorization_service.process_batch_urls(
-            request.urls, 
-            list_id, 
+            request.urls,
+            list_id,
             request.use_ollama
         )
         return results

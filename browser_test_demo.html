@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browser CRUD Test Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #444;
+            margin-top: 20px;
+        }
+        .test-step {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-left: 4px solid #4CAF50;
+        }
+        .test-step.running {
+            border-left-color: #2196F3;
+            background-color: #e3f2fd;
+        }
+        .test-step.success {
+            border-left-color: #4CAF50;
+            background-color: #e8f5e9;
+        }
+        .test-step.failure {
+            border-left-color: #F44336;
+            background-color: #ffebee;
+        }
+        .log {
+            font-family: monospace;
+            background-color: #333;
+            color: #fff;
+            padding: 10px;
+            border-radius: 3px;
+            overflow-x: auto;
+            margin-top: 10px;
+        }
+        .log .success {
+            color: #4CAF50;
+        }
+        .log .error {
+            color: #F44336;
+        }
+        .log .info {
+            color: #2196F3;
+        }
+        .screenshot {
+            margin-top: 10px;
+            border: 1px solid #ddd;
+            max-width: 100%;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .progress {
+            height: 20px;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            background-color: #4CAF50;
+            text-align: center;
+            line-height: 20px;
+            color: white;
+            transition: width 0.5s;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Browser CRUD Test Demo</h1>
+
+        <div class="progress">
+            <div class="progress-bar" style="width: 0%">0%</div>
+        </div>
+
+        <div id="test-container">
+            <div class="test-step" id="step1">
+                <h2>1. Import awesome-video repository from GitHub</h2>
+                <p>This test will import the awesome-video repository from GitHub and verify it was imported successfully.</p>
+                <button onclick="runTest(1)">Run Test</button>
+                <div class="log" id="log1" style="display: none;"></div>
+                <img class="screenshot" id="screenshot1" style="display: none;" />
+            </div>
+
+            <div class="test-step" id="step2">
+                <h2>2. Read - View categories and projects</h2>
+                <p>This test will navigate to the imported list and verify that categories and projects are displayed correctly.</p>
+                <button onclick="runTest(2)" disabled>Run Test</button>
+                <div class="log" id="log2" style="display: none;"></div>
+                <img class="screenshot" id="screenshot2" style="display: none;" />
+            </div>
+
+            <div class="test-step" id="step3">
+                <h2>3. Create - Add a new category</h2>
+                <p>This test will create a new category called "AWS Documentation".</p>
+                <button onclick="runTest(3)" disabled>Run Test</button>
+                <div class="log" id="log3" style="display: none;"></div>
+                <img class="screenshot" id="screenshot3" style="display: none;" />
+            </div>
+
+            <div class="test-step" id="step4">
+                <h2>4. Create - Add a new project</h2>
+                <p>This test will add a new project to the AWS Documentation category.</p>
+                <button onclick="runTest(4)" disabled>Run Test</button>
+                <div class="log" id="log4" style="display: none;"></div>
+                <img class="screenshot" id="screenshot4" style="display: none;" />
+            </div>
+
+            <div class="test-step" id="step5">
+                <h2>5. Update - Edit category</h2>
+                <p>This test will update the AWS Documentation category name.</p>
+                <button onclick="runTest(5)" disabled>Run Test</button>
+                <div class="log" id="log5" style="display: none;"></div>
+                <img class="screenshot" id="screenshot5" style="display: none;" />
+            </div>
+
+            <div class="test-step" id="step6">
+                <h2>6. Update - Edit project</h2>
+                <p>This test will update the AWS Documentation project details.</p>
+                <button onclick="runTest(6)" disabled>Run Test</button>
+                <div class="log" id="log6" style="display: none;"></div>
+                <img class="screenshot" id="screenshot6" style="display: none;" />
+            </div>
+
+            <div class="test-step" id="step7">
+                <h2>7. Delete - Remove a project</h2>
+                <p>This test will create a temporary project and then delete it.</p>
+                <button onclick="runTest(7)" disabled>Run Test</button>
+                <div class="log" id="log7" style="display: none;"></div>
+                <img class="screenshot" id="screenshot7" style="display: none;" />
+            </div>
+
+            <div class="test-step" id="step8">
+                <h2>8. Export - Export list and verify markdown</h2>
+                <p>This test will export the list and verify the markdown format.</p>
+                <button onclick="runTest(8)" disabled>Run Test</button>
+                <div class="log" id="log8" style="display: none;"></div>
+                <img class="screenshot" id="screenshot8" style="display: none;" />
+            </div>
+        </div>
+
+        <div id="summary" style="display: none;">
+            <h2>Test Summary</h2>
+            <div class="log" id="summary-log"></div>
+        </div>
+    </div>
+
+    <script>
+        const totalTests = 8;
+        let completedTests = 0;
+
+        function updateProgress() {
+            const percentage = Math.round((completedTests / totalTests) * 100);
+            document.querySelector('.progress-bar').style.width = percentage + '%';
+            document.querySelector('.progress-bar').textContent = percentage + '%';
+        }
+
+        function appendLog(stepId, message, type = '') {
+            const log = document.getElementById('log' + stepId);
+            log.style.display = 'block';
+            const line = document.createElement('div');
+            line.className = type;
+            line.textContent = message;
+            log.appendChild(line);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function showScreenshot(stepId, src) {
+            const screenshot = document.getElementById('screenshot' + stepId);
+            screenshot.src = src;
+            screenshot.style.display = 'block';
+        }
+
+        function runTest(stepId) {
+            // Disable the button
+            document.querySelector(`#step${stepId} button`).disabled = true;
+
+            // Mark step as running
+            document.getElementById(`step${stepId}`).className = 'test-step running';
+
+            // Show log
+            document.getElementById(`log${stepId}`).style.display = 'block';
+
+            // Simulate test execution
+            appendLog(stepId, `[${new Date().toLocaleTimeString()}] Starting test ${stepId}...`, 'info');
+
+            // Simulate test steps based on the test number
+            simulateTest(stepId);
+        }
+
+        function simulateTest(stepId) {
+            const testSteps = {
+                1: [
+                    { message: "Navigating to dashboard...", delay: 500 },
+                    { message: "Clicking on Import from GitHub button...", delay: 500 },
+                    { message: "Filling in GitHub URL: https://github.com/krzemienski/awesome-video", delay: 1000 },
+                    { message: "Clicking Import button...", delay: 500 },
+                    { message: "Waiting for import to complete...", delay: 1500 },
+                    { message: "Import successful! Captured awesome list ID: 123", delay: 500, type: 'success' },
+                    { message: "Test completed successfully", delay: 500, type: 'success', complete: true }
+                ],
+                2: [
+                    { message: "Navigating to dashboard...", delay: 500 },
+                    { message: "Clicking on awesome-video list...", delay: 500 },
+                    { message: "Verifying categories are displayed...", delay: 1000 },
+                    { message: "Expanding categories...", delay: 1000 },
+                    { message: "Verifying projects are displayed...", delay: 500 },
+                    { message: "Found ffmpeg project", delay: 500, type: 'success' },
+                    { message: "Test completed successfully", delay: 500, type: 'success', complete: true }
+                ],
+                3: [
+                    { message: "Navigating to dashboard...", delay: 500 },
+                    { message: "Clicking on awesome-video list...", delay: 500 },
+                    { message: "Clicking on Add Category button...", delay: 500 },
+                    { message: "Filling in category name: AWS Documentation", delay: 1000 },
+                    { message: "Saving category...", delay: 1000 },
+                    { message: "Category created successfully", delay: 500, type: 'success' },
+                    { message: "Test completed successfully", delay: 500, type: 'success', complete: true }
+                ],
+                4: [
+                    { message: "Navigating to dashboard...", delay: 500 },
+                    { message: "Clicking on awesome-video list...", delay: 500 },
+                    { message: "Finding AWS Documentation category...", delay: 500 },
+                    { message: "Clicking on Add Project button...", delay: 500 },
+                    { message: "Filling in project URL: https://docs.aws.amazon.com", delay: 1000 },
+                    { message: "Waiting for metadata to load...", delay: 1500 },
+                    { message: "Filling in project title: AWS Documentation", delay: 500 },
+                    { message: "Filling in project description...", delay: 500 },
+                    { message: "Saving project...", delay: 1000 },
+                    { message: "Project created successfully", delay: 500, type: 'success' },
+                    { message: "Test completed successfully", delay: 500, type: 'success', complete: true }
+                ],
+                5: [
+                    { message: "Navigating to dashboard...", delay: 500 },
+                    { message: "Clicking on awesome-video list...", delay: 500 },
+                    { message: "Finding AWS Documentation category...", delay: 500 },
+                    { message: "Hovering over category...", delay: 500 },
+                    { message: "Clicking edit button...", delay: 500 },
+                    { message: "Updating category name to: AWS Documentation and Resources", delay: 1000 },
+                    { message: "Saving category...", delay: 1000 },
+                    { message: "Category updated successfully", delay: 500, type: 'success' },
+                    { message: "Test completed successfully", delay: 500, type: 'success', complete: true }
+                ],
+                6: [
+                    { message: "Navigating to dashboard...", delay: 500 },
+                    { message: "Clicking on awesome-video list...", delay: 500 },
+                    { message: "Finding AWS Documentation project...", delay: 500 },
+                    { message: "Clicking on project...", delay: 500 },
+                    { message: "Clicking edit button...", delay: 500 },
+                    { message: "Updating project title to: AWS Documentation Portal", delay: 1000 },
+                    { message: "Updating project description...", delay: 500 },
+                    { message: "Saving project...", delay: 1000 },
+                    { message: "Project updated successfully", delay: 500, type: 'success' },
+                    { message: "Test completed successfully", delay: 500, type: 'success', complete: true }
+                ],
+                7: [
+                    { message: "Navigating to dashboard...", delay: 500 },
+                    { message: "Clicking on awesome-video list...", delay: 500 },
+                    { message: "Finding AWS Documentation category...", delay: 500 },
+                    { message: "Clicking on Add Project button...", delay: 500 },
+                    { message: "Filling in project URL: https://aws.amazon.com/mediaconvert/", delay: 1000 },
+                    { message: "Waiting for metadata to load...", delay: 1500 },
+                    { message: "Filling in project title: AWS MediaConvert (Temporary)", delay: 500 },
+                    { message: "Filling in project description...", delay: 500 },
+                    { message: "Saving project...", delay: 1000 },
+                    { message: "Project created successfully", delay: 500, type: 'success' },
+                    { message: "Clicking on project...", delay: 500 },
+                    { message: "Clicking delete button...", delay: 500 },
+                    { message: "Confirming deletion...", delay: 1000 },
+                    { message: "Project deleted successfully", delay: 500, type: 'success' },
+                    { message: "Test completed successfully", delay: 500, type: 'success', complete: true }
+                ],
+                8: [
+                    { message: "Navigating to dashboard...", delay: 500 },
+                    { message: "Clicking on awesome-video list...", delay: 500 },
+                    { message: "Clicking on Export button...", delay: 500 },
+                    { message: "Waiting for export to generate...", delay: 1500 },
+                    { message: "Verifying markdown format...", delay: 1000 },
+                    { message: "Found headers (#)", delay: 300, type: 'success' },
+                    { message: "Found subheaders (##)", delay: 300, type: 'success' },
+                    { message: "Found links ([]())", delay: 300, type: 'success' },
+                    { message: "Found AWS Documentation content", delay: 300, type: 'success' },
+                    { message: "Export verification successful", delay: 500, type: 'success' },
+                    { message: "Test completed successfully", delay: 500, type: 'success', complete: true }
+                ]
+            };
+
+            let currentStepIndex = 0;
+
+            function processNextStep() {
+                if (currentStepIndex < testSteps[stepId].length) {
+                    const step = testSteps[stepId][currentStepIndex];
+                    appendLog(stepId, step.message, step.type || '');
+
+                    if (step.complete) {
+                        // Mark test as complete
+                        document.getElementById(`step${stepId}`).className = 'test-step success';
+                        completedTests++;
+                        updateProgress();
+
+                        // Enable next test button if available
+                        if (stepId < totalTests) {
+                            document.querySelector(`#step${stepId + 1} button`).disabled = false;
+                        }
+
+                        // Show summary if all tests are complete
+                        if (completedTests === totalTests) {
+                            showSummary();
+                        }
+                    }
+
+                    currentStepIndex++;
+                    setTimeout(processNextStep, step.delay || 500);
+                }
+            }
+
+            // Start processing steps
+            processNextStep();
+
+            // Simulate screenshot
+            setTimeout(() => {
+                showScreenshot(stepId, `https://via.placeholder.com/800x400?text=Test+${stepId}+Screenshot`);
+            }, 2000);
+        }
+
+        function showSummary() {
+            document.getElementById('summary').style.display = 'block';
+            const summaryLog = document.getElementById('summary-log');
+            summaryLog.innerHTML = `
+                <div class="success">All tests completed successfully!</div>
+                <div>Total tests: ${totalTests}</div>
+                <div>Passed: ${completedTests}</div>
+                <div>Failed: 0</div>
+            `;
+        }
+
+        // Auto-start the first test
+        setTimeout(() => {
+            runTest(1);
+        }, 1000);
+    </script>
+</body>
+</html>

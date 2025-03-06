@@ -1,0 +1,54 @@
+#!/bin/bash
+# Script to run CRUD functional tests in Docker environment
+
+set -e  # Exit on any error
+
+echo "=== Starting Docker containers ==="
+docker-compose up -d
+
+# Wait for services to be fully ready
+echo "Waiting for services to be fully ready..."
+sleep 15
+
+# Check if backend is healthy
+echo "Checking if backend is healthy..."
+HEALTH_CHECK_URL="http://localhost:8000/api/v1/health"
+MAX_RETRIES=10
+RETRY_COUNT=0
+
+while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+    if curl -s -f $HEALTH_CHECK_URL > /dev/null; then
+        echo "Backend is healthy!"
+        break
+    else
+        echo "Backend not ready yet, retrying in 5 seconds..."
+        sleep 5
+        RETRY_COUNT=$((RETRY_COUNT + 1))
+    fi
+done
+
+if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+    echo "Error: Backend failed to become healthy after $MAX_RETRIES retries."
+    echo "Shutting down Docker containers..."
+    docker-compose down
+    exit 1
+fi
+
+echo "=== Running CRUD functional tests ==="
+python3 alm_crud_test.py
+
+# Check if tests were successful
+TEST_EXIT_CODE=$?
+if [ $TEST_EXIT_CODE -ne 0 ]; then
+    echo "Tests failed with exit code $TEST_EXIT_CODE"
+    echo "Shutting down Docker containers..."
+    docker-compose down
+    exit $TEST_EXIT_CODE
+fi
+
+echo "=== Tests completed successfully! ==="
+
+echo "=== Shutting down Docker containers ==="
+docker-compose down
+
+echo "=== All done! ==="
