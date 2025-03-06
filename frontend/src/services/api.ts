@@ -14,21 +14,26 @@ import {
   UrlAnalysisResult
 } from '@/types';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+// Force the API URL to use localhost:8000 for browser access
+const API_URL = 'http://localhost:8000/api/v1';
 
 // Create axios instance with base URL and default headers
 const api = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
-  },
+    'Accept': 'application/json',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Accept'
+  }
 });
 
 // Error handling middleware
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.error('API Error:', error.response?.data || error.message);
+    console.error('API Error:', error.response?.data || error.message || error);
     return Promise.reject(error);
   }
 );

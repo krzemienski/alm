@@ -120,12 +120,26 @@ def import_awesome_list(db: Session, repository_url: str) -> AwesomeList:
         print("Parsing README content")
         parsed_data = parse_awesome_list(readme_content)
         print(f"Parsed data - Title: {parsed_data.get('title')}, Categories: {len(parsed_data.get('categories', []))}")
+        
+        # Additional debug logging for categories
+        if len(parsed_data.get('categories', [])) == 0:
+            print("WARNING: No categories found in the parsed data!")
+            # Create a default category to prevent errors
+            parsed_data["categories"] = [{
+                "name": "Uncategorized",
+                "subcategories": [],
+                "projects": []
+            }]
+            print("Added a default 'Uncategorized' category")
+        else:
+            for idx, cat in enumerate(parsed_data.get('categories', [])):
+                print(f"Category {idx+1}: {cat.get('name')} - Subcategories: {len(cat.get('subcategories', []))} - Projects: {len(cat.get('projects', []))}")
 
         # Create awesome list in database
         print("Creating awesome list in database")
         db_awesome_list = AwesomeList(
-            title=parsed_data["title"],
-            description=parsed_data["description"],
+            title=parsed_data["title"] or "Untitled Awesome List",
+            description=parsed_data["description"] or f"Imported from {repository_url}",
             repository_url=str(repository_url),
         )
         db.add(db_awesome_list)
@@ -135,54 +149,93 @@ def import_awesome_list(db: Session, repository_url: str) -> AwesomeList:
 
         # Import categories and projects
         print("Importing categories and projects")
-        for category_data in parsed_data["categories"]:
-            from app.services.category_service import create_category_from_import
-            from app.services.project_service import create_project_from_import
-
-            # Create category
-            db_category = create_category_from_import(
+        from app.services.category_service import create_category_from_import
+        from app.services.project_service import create_project_from_import
+        
+        # Ensure we have at least one category
+        if not parsed_data["categories"]:
+            print("No categories found, creating a default category")
+            default_category = create_category_from_import(
                 db=db,
                 list_id=db_awesome_list.id,
-                name=category_data["name"],
+                name="Uncategorized",
                 parent_id=None
             )
-
-            # Create subcategories if any
-            for subcategory_data in category_data.get("subcategories", []):
-                db_subcategory = create_category_from_import(
+            print(f"Created default category with ID: {default_category.id}")
+            return db_awesome_list
+        
+        for category_idx, category_data in enumerate(parsed_data["categories"]):
+            # Create category
+            try:
+                category_name = category_data.get("name", f"Category {category_idx+1}")
+                print(f"Creating category: {category_name}")
+                db_category = create_category_from_import(
                     db=db,
                     list_id=db_awesome_list.id,
-                    name=subcategory_data["name"],
-                    parent_id=db_category.id
+                    name=category_name,
+                    parent_id=None
                 )
+                print(f"Created category with ID: {db_category.id}")
 
-                # Create projects in subcategory
-                for project_data in subcategory_data.get("projects", []):
-                    create_project_from_import(
-                        db=db,
-                        list_id=db_awesome_list.id,
-                        category_id=db_subcategory.id,
-                        title=project_data["title"],
-                        url=project_data["url"],
-                        description=project_data["description"]
-                    )
+                # Create subcategories if any
+                for subcategory_idx, subcategory_data in enumerate(category_data.get("subcategories", [])):
+                    try:
+                        subcategory_name = subcategory_data.get("name", f"Subcategory {subcategory_idx+1}")
+                        print(f"Creating subcategory: {subcategory_name} under {category_name}")
+                        db_subcategory = create_category_from_import(
+                            db=db,
+                            list_id=db_awesome_list.id,
+                            name=subcategory_name,
+                            parent_id=db_category.id
+                        )
+                        print(f"Created subcategory with ID: {db_subcategory.id}")
 
-            # Create projects directly in the category
-            for project_data in category_data.get("projects", []):
-                create_project_from_import(
-                    db=db,
-                    list_id=db_awesome_list.id,
-                    category_id=db_category.id,
-                    title=project_data["title"],
-                    url=project_data["url"],
-                    description=project_data["description"]
-                )
+                        # Create projects in subcategory
+                        for project_idx, project_data in enumerate(subcategory_data.get("projects", [])):
+                            try:
+                                print(f"Creating project in subcategory: {project_data.get('title', f'Project {project_idx+1}')}")
+                                create_project_from_import(
+                                    db=db,
+                                    list_id=db_awesome_list.id,
+                                    category_id=db_subcategory.id,
+                                    title=project_data.get("title", f"Project {project_idx+1}"),
+                                    url=project_data.get("url", ""),
+                                    description=project_data.get("description", "")
+                                )
+                            except Exception as e:
+                                print(f"Error creating project in subcategory: {str(e)}")
+                                # Continue with next project
+                    except Exception as e:
+                        print(f"Error creating subcategory: {str(e)}")
+                        # Continue with next subcategory
 
+                # Create projects directly in the category
+                for project_idx, project_data in enumerate(category_data.get("projects", [])):
+                    try:
+                        print(f"Creating project in category: {project_data.get('title', f'Project {project_idx+1}')}")
+                        create_project_from_import(
+                            db=db,
+                            list_id=db_awesome_list.id,
+                            category_id=db_category.id,
+                            title=project_data.get("title", f"Project {project_idx+1}"),
+                            url=project_data.get("url", ""),
+                            description=project_data.get("description", "")
+                        )
+                    except Exception as e:
+                        print(f"Error creating project in category: {str(e)}")
+                        # Continue with next project
+            except Exception as e:
+                print(f"Error creating category: {str(e)}")
+                # Continue with next category
+
+        print(f"Import completed successfully for awesome list ID: {db_awesome_list.id}")
         return db_awesome_list
 
     except Exception as e:
         db.rollback()
-        print(f"Import failed: {str(e)}")
+        import traceback
+        error_detail = f"Import failed: {str(e)}\n{traceback.format_exc()}"
+        print(error_detail)
         raise HTTPException(status_code=500, detail=f"Import failed: {str(e)}")
 
 

@@ -13,23 +13,16 @@ import { GitHub as GitHubIcon } from '@mui/icons-material';
 
 import LoadingButton from '@/components/UI/LoadingButton';
 import ErrorAlert from '@/components/UI/ErrorAlert';
-import GitHubValidationCard from '@/components/GitHub/GitHubValidationCard';
-import { githubApi } from '@/services/api';
+import { awesomeListsApi } from '@/services/api';
 
 export default function ImportForm() {
   const router = useRouter();
   const [repositoryUrl, setRepositoryUrl] = useState<string>('');
-  const [isValidated, setIsValidated] = useState<boolean>(false);
   const [isImporting, setIsImporting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleRepositoryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setRepositoryUrl(e.target.value);
-    setIsValidated(false); // Reset validation when URL changes
-  };
-
-  const handleValidationComplete = (isValid: boolean) => {
-    setIsValidated(isValid);
   };
 
   const handleImport = async () => {
@@ -42,7 +35,8 @@ export default function ImportForm() {
       setIsImporting(true);
       setError(null);
       
-      const response = await githubApi.importList(repositoryUrl);
+      // Directly use the awesomeListsApi.import method without validation
+      const response = await awesomeListsApi.import({ repository_url: repositoryUrl });
       
       if (response && response.id) {
         // Navigate to the new awesome list page
@@ -81,28 +75,16 @@ export default function ImportForm() {
         />
       </Paper>
       
-      {repositoryUrl && (
-        <>
-          <GitHubValidationCard 
-            repositoryUrl={repositoryUrl}
-            onValidationComplete={handleValidationComplete}
-          />
-          
-          <Divider sx={{ my: 4 }} />
-          
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <LoadingButton
-              variant="contained"
-              onClick={handleImport}
-              disabled={!isValidated}
-              loading={isImporting}
-              loadingText="Importing..."
-            >
-              Import Awesome List
-            </LoadingButton>
-          </Box>
-        </>
-      )}
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 4 }}>
+        <LoadingButton
+          variant="contained"
+          onClick={handleImport}
+          loading={isImporting}
+          loadingText="Importing..."
+        >
+          Import Awesome List
+        </LoadingButton>
+      </Box>
     </Box>
   );
 }

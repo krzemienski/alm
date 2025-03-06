@@ -10,8 +10,12 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     PROJECT_NAME: str = "Awesome List Manager"
 
-    # CORS
-    CORS_ORIGINS: List[str] = ["http://localhost:3000"]
+    # CORS settings
+    CORS_ORIGINS: List[str] = [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://frontend:3000"
+    ]
 
     @validator("CORS_ORIGINS", pre=True)
     def parse_cors_origins(cls, v):
