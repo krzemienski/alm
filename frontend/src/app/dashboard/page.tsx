@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { 
-  Grid, 
-  Box, 
-  Typography, 
-  Button, 
-  CircularProgress, 
+import {
+  Grid,
+  Box,
+  Typography,
+  Button,
+  CircularProgress,
   Paper,
   Container,
   Alert,
@@ -17,7 +17,7 @@ import Link from 'next/link';
 
 import AppLayout from '@/components/Layout/AppLayout';
 import PageHeader from '@/components/UI/PageHeader';
-import AwesomeListCard from '@/components/AwesomeList/AwesomeListCard';
+import AwesomeListCard from './components/AwesomeListCard';
 import { awesomeListsApi } from '@/services/api';
 import { AwesomeList } from '@/types';
 
@@ -34,7 +34,11 @@ export default function Dashboard() {
   const fetchAwesomeLists = async () => {
     try {
       setLoading(true);
+      console.log('Fetching awesome lists...');
       const data = await awesomeListsApi.getAll();
+      console.log('Awesome lists data:', data);
+
+      // Use the data directly from the backend
       setAwesomeLists(data);
       setError(null);
     } catch (err) {
@@ -71,8 +75,8 @@ export default function Dashboard() {
         />
 
         {deleteSuccess && (
-          <Alert 
-            severity="success" 
+          <Alert
+            severity="success"
             sx={{ mb: 3 }}
             onClose={() => setDeleteSuccess(false)}
           >
@@ -96,9 +100,9 @@ export default function Dashboard() {
           <Grid container spacing={3}>
             {awesomeLists.map((list) => (
               <Grid item xs={12} sm={6} md={4} key={list.id}>
-                <AwesomeListCard 
-                  awesomeList={list} 
-                  onDelete={handleDelete} 
+                <AwesomeListCard
+                  awesomeList={list}
+                  onDelete={handleDelete}
                 />
               </Grid>
             ))}

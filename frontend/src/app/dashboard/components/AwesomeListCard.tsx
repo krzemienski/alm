@@ -2,12 +2,12 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { 
-  Card, 
-  CardContent, 
-  CardActions, 
-  Typography, 
-  Button, 
+import {
+  Card,
+  CardContent,
+  CardActions,
+  Typography,
+  Button,
   Box,
   Chip,
   IconButton,
@@ -21,7 +21,7 @@ import {
   DialogContentText,
   DialogActions
 } from '@mui/material';
-import { 
+import {
   GitHub as GitHubIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
@@ -42,20 +42,20 @@ export default function AwesomeListCard({ awesomeList, onDelete }: AwesomeListCa
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  
+
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
-  
+
   const handleMenuClose = () => {
     setAnchorEl(null);
   };
-  
+
   const handleDeleteClick = () => {
     handleMenuClose();
     setDeleteDialogOpen(true);
   };
-  
+
   const handleDeleteConfirm = async () => {
     try {
       setLoading(true);
@@ -67,14 +67,14 @@ export default function AwesomeListCard({ awesomeList, onDelete }: AwesomeListCa
       setDeleteDialogOpen(false);
     }
   };
-  
+
   const handleDeleteCancel = () => {
     setDeleteDialogOpen(false);
   };
-  
+
   const repositoryName = () => {
     if (!awesomeList.repository_url) return 'N/A';
-    
+
     const url = new URL(awesomeList.repository_url);
     const pathParts = url.pathname.split('/').filter(Boolean);
     if (pathParts.length >= 2) {
@@ -82,7 +82,7 @@ export default function AwesomeListCard({ awesomeList, onDelete }: AwesomeListCa
     }
     return awesomeList.repository_url;
   };
-  
+
   return (
     <>
       <Card variant="outlined" sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -95,11 +95,11 @@ export default function AwesomeListCard({ awesomeList, onDelete }: AwesomeListCa
               <MoreVertIcon />
             </IconButton>
           </Box>
-          
+
           <Typography color="text.secondary" variant="body2" paragraph>
             {awesomeList.description || 'No description available'}
           </Typography>
-          
+
           {awesomeList.repository_url && (
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
               <GitHubIcon fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} />
@@ -108,7 +108,7 @@ export default function AwesomeListCard({ awesomeList, onDelete }: AwesomeListCa
               </Typography>
             </Box>
           )}
-          
+
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
             <Chip
               size="small"
@@ -122,11 +122,11 @@ export default function AwesomeListCard({ awesomeList, onDelete }: AwesomeListCa
             />
           </Box>
         </CardContent>
-        
+
         <CardActions sx={{ p: 2, pt: 0 }}>
-          <Button 
-            variant="contained" 
-            component={Link} 
+          <Button
+            variant="contained"
+            component={Link}
             href={`/awesome-lists/${awesomeList.id}`}
             fullWidth
           >
@@ -134,45 +134,45 @@ export default function AwesomeListCard({ awesomeList, onDelete }: AwesomeListCa
           </Button>
         </CardActions>
       </Card>
-      
+
       <Menu
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
         onClose={handleMenuClose}
       >
-        <MenuItem 
-          component={Link} 
+        <MenuItem
+          component={Link}
           href={`/awesome-lists/${awesomeList.id}`}
           onClick={handleMenuClose}
         >
           <ListItemIcon><VisibilityIcon fontSize="small" /></ListItemIcon>
           <ListItemText>View Details</ListItemText>
         </MenuItem>
-        
-        <MenuItem 
-          component={Link} 
+
+        <MenuItem
+          component={Link}
           href={`/awesome-lists/${awesomeList.id}/edit`}
           onClick={handleMenuClose}
         >
           <ListItemIcon><EditIcon fontSize="small" /></ListItemIcon>
           <ListItemText>Edit</ListItemText>
         </MenuItem>
-        
-        <MenuItem 
-          component={Link} 
+
+        <MenuItem
+          component={Link}
           href={`/export/${awesomeList.id}`}
           onClick={handleMenuClose}
         >
           <ListItemIcon><DownloadIcon fontSize="small" /></ListItemIcon>
           <ListItemText>Export</ListItemText>
         </MenuItem>
-        
+
         <MenuItem onClick={handleDeleteClick}>
           <ListItemIcon><DeleteIcon fontSize="small" color="error" /></ListItemIcon>
           <ListItemText primary="Delete" primaryTypographyProps={{ color: 'error' }} />
         </MenuItem>
       </Menu>
-      
+
       <Dialog
         open={deleteDialogOpen}
         onClose={handleDeleteCancel}
@@ -187,9 +187,9 @@ export default function AwesomeListCard({ awesomeList, onDelete }: AwesomeListCa
           <Button onClick={handleDeleteCancel} disabled={loading}>
             Cancel
           </Button>
-          <LoadingButton 
-            onClick={handleDeleteConfirm} 
-            color="error" 
+          <LoadingButton
+            onClick={handleDeleteConfirm}
+            color="error"
             loading={loading}
             loadingText="Deleting..."
           >

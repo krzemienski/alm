@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, ReactNode } from 'react';
+import { useState, ReactNode, useEffect } from 'react';
 import { 
   Box, 
   Drawer, 
@@ -10,7 +10,8 @@ import {
   Divider, 
   IconButton,
   useMediaQuery,
-  useTheme
+  useTheme,
+  alpha
 } from '@mui/material';
 import { 
   Menu as MenuIcon
@@ -28,6 +29,20 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  // Add scroll event listener
+  useEffect(() => {
+    const handleScroll = () => {
+      const isScrolled = window.scrollY > 10;
+      if (isScrolled !== scrolled) {
+        setScrolled(isScrolled);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [scrolled]);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -49,9 +64,15 @@ export default function AppLayout({ children }: AppLayoutProps) {
     <Box sx={{ display: 'flex' }}>
       <AppBar
         position="fixed"
+        elevation={scrolled ? 2 : 0}
         sx={{
           width: { md: `calc(100% - ${drawerWidth}px)` },
           ml: { md: `${drawerWidth}px` },
+          bgcolor: scrolled ? 'background.paper' : 'transparent',
+          backdropFilter: scrolled ? 'blur(8px)' : 'none',
+          transition: theme.transitions.create(['background-color', 'box-shadow', 'backdrop-filter'], {
+            duration: theme.transitions.duration.standard,
+          }),
         }}
       >
         <Toolbar>

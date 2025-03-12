@@ -29,7 +29,8 @@ class AwesomeListInDBBase(AwesomeListBase):
 
 
 class AwesomeList(AwesomeListInDBBase):
-    pass
+    categories_count: Optional[int] = 0
+    projects_count: Optional[int] = 0
 
 
 class AwesomeListImport(BaseModel):

@@ -19,14 +19,59 @@ def get_awesome_lists(db: Session, skip: int = 0, limit: int = 100) -> List[Awes
     """
     Retrieve all awesome lists from the database.
     """
-    return db.query(AwesomeList).offset(skip).limit(limit).all()
+    from sqlalchemy import func
+    from app.models.category import Category
+    from app.models.project import Project
+
+    # Get all awesome lists
+    awesome_lists = db.query(AwesomeList).offset(skip).limit(limit).all()
+
+    # Add category and project counts for each list
+    for awesome_list in awesome_lists:
+        # Count categories
+        categories_count = db.query(func.count(Category.id)).filter(
+            Category.list_id == awesome_list.id
+        ).scalar()
+
+        # Count projects
+        projects_count = db.query(func.count(Project.id)).filter(
+            Project.list_id == awesome_list.id
+        ).scalar()
+
+        # Add counts as attributes
+        awesome_list.categories_count = categories_count or 0
+        awesome_list.projects_count = projects_count or 0
+
+        # Debug logging
+        print(f"List ID {awesome_list.id}: {categories_count} categories, {projects_count} projects")
+
+    return awesome_lists
 
 
 def get_awesome_list(db: Session, list_id: int) -> Optional[AwesomeList]:
     """
     Get a specific awesome list by ID.
     """
-    return db.query(AwesomeList).filter(AwesomeList.id == list_id).first()
+    awesome_list = db.query(AwesomeList).filter(AwesomeList.id == list_id).first()
+
+    if awesome_list:
+        # Add category and project counts
+        from sqlalchemy import func
+        from app.models.category import Category
+        from app.models.project import Project
+
+        categories_count = db.query(func.count(Category.id)).filter(
+            Category.list_id == awesome_list.id
+        ).scalar()
+
+        projects_count = db.query(func.count(Project.id)).filter(
+            Project.list_id == awesome_list.id
+        ).scalar()
+
+        awesome_list.categories_count = categories_count
+        awesome_list.projects_count = projects_count
+
+    return awesome_list
 
 
 def create_awesome_list(db: Session, awesome_list_in: AwesomeListCreate) -> AwesomeList:
@@ -120,7 +165,7 @@ def import_awesome_list(db: Session, repository_url: str) -> AwesomeList:
         print("Parsing README content")
         parsed_data = parse_awesome_list(readme_content)
         print(f"Parsed data - Title: {parsed_data.get('title')}, Categories: {len(parsed_data.get('categories', []))}")
-        
+
         # Additional debug logging for categories
         if len(parsed_data.get('categories', [])) == 0:
             print("WARNING: No categories found in the parsed data!")
@@ -151,7 +196,7 @@ def import_awesome_list(db: Session, repository_url: str) -> AwesomeList:
         print("Importing categories and projects")
         from app.services.category_service import create_category_from_import
         from app.services.project_service import create_project_from_import
-        
+
         # Ensure we have at least one category
         if not parsed_data["categories"]:
             print("No categories found, creating a default category")
@@ -163,7 +208,7 @@ def import_awesome_list(db: Session, repository_url: str) -> AwesomeList:
             )
             print(f"Created default category with ID: {default_category.id}")
             return db_awesome_list
-        
+
         for category_idx, category_data in enumerate(parsed_data["categories"]):
             # Create category
             try:

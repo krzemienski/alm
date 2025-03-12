@@ -101,7 +101,7 @@ export const categoriesApi = {
   
   // Get category tree structure
   getTree: async (listId: number): Promise<CategoryWithSubcategories[]> => {
-    const response = await api.get(ensureTrailingSlash(`/categories/tree?list_id=${listId}`));
+    const response = await api.get(ensureTrailingSlash(`/categories/tree`), { params: { list_id: listId } });
     return response.data;
   },
   
