@@ -82,7 +82,7 @@ class AICategorization:
             category_structure = self._get_category_structure(awesome_list_id)
 
             # Get metadata
-            metadata = fetch_site_metadata(url)
+            metadata = await fetch_site_metadata(url)
 
             # Configure AI categorizer based on preference
             if use_ollama != self.ai_categorizer.use_ollama:

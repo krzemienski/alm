@@ -60,7 +60,7 @@ fi
 
 echo "=== Running browser-based CRUD functional tests ==="
 cd frontend
-npx playwright test tests/browser_crud_test.js
+npx playwright test tests/browser_crud_test.spec.js
 
 # Check if tests were successful
 TEST_EXIT_CODE=$?

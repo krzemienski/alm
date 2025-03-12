@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, 
-  Typography, 
-  Button, 
-  Container, 
-  Grid, 
-  Paper, 
-  Card, 
+import {
+  Box,
+  Typography,
+  Button,
+  Container,
+  Grid,
+  Paper,
+  Card,
   CardContent,
   Divider,
   List,
@@ -19,7 +19,7 @@ import {
   Toolbar,
   useScrollTrigger
 } from '@mui/material';
-import { 
+import {
   GitHub as GitHubIcon,
   ImportExport as ImportExportIcon,
   Category as CategoryIcon,
@@ -51,7 +51,7 @@ function ElevationScroll(props: { children: React.ReactElement }) {
 
 export default function Home() {
   const router = useRouter();
-  
+
   return (
     <Box sx={{ minHeight: '100vh' }}>
       <ElevationScroll>
@@ -61,16 +61,16 @@ export default function Home() {
               ALM
             </Typography>
             <Box sx={{ display: 'flex', gap: 2 }}>
-              <Button 
-                color="inherit" 
-                component={Link} 
+              <Button
+                color="inherit"
+                component={Link}
                 href="/about"
               >
                 About
               </Button>
-              <Button 
-                color="inherit" 
-                component={Link} 
+              <Button
+                color="inherit"
+                component={Link}
                 href="https://github.com/sindresorhus/awesome"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -78,8 +78,8 @@ export default function Home() {
               >
                 Awesome Lists
               </Button>
-              <Button 
-                variant="contained" 
+              <Button
+                variant="contained"
                 color="primary"
                 component={Link}
                 href="/dashboard"
@@ -90,9 +90,9 @@ export default function Home() {
           </Toolbar>
         </AppBar>
       </ElevationScroll>
-      
-      <Box 
-        sx={{ 
+
+      <Box
+        sx={{
           backgroundImage: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
           color: 'white',
           pt: { xs: 12, md: 20 },
@@ -109,13 +109,14 @@ export default function Home() {
                 Create, manage, and maintain curated collections of awesome resources with ease
               </Typography>
               <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                <Button 
-                  variant="contained" 
+                <Button
+                  variant="contained"
                   size="large"
-                  onClick={() => router.push('/dashboard')}
-                  sx={{ 
-                    py: 1.5, 
-                    px: 4, 
+                  component={Link}
+                  href="/dashboard"
+                  sx={{
+                    py: 1.5,
+                    px: 4,
                     borderRadius: 2,
                     backgroundColor: 'white',
                     color: '#764ba2',
@@ -127,13 +128,14 @@ export default function Home() {
                 >
                   Get Started
                 </Button>
-                <Button 
-                  variant="outlined" 
+                <Button
+                  variant="outlined"
                   size="large"
-                  onClick={() => router.push('/about')}
-                  sx={{ 
-                    py: 1.5, 
-                    px: 4, 
+                  component={Link}
+                  href="/about"
+                  sx={{
+                    py: 1.5,
+                    px: 4,
                     borderRadius: 2,
                     borderColor: 'white',
                     color: 'white',
@@ -148,12 +150,12 @@ export default function Home() {
               </Box>
             </Grid>
             <Grid item xs={12} md={5}>
-              <Box 
-                component="img" 
-                src="/hero-image.svg" 
+              <Box
+                component="img"
+                src="/hero-image.svg"
                 alt="Awesome List Manager"
-                sx={{ 
-                  width: '100%', 
+                sx={{
+                  width: '100%',
                   display: { xs: 'none', md: 'block' },
                   filter: 'drop-shadow(0px 5px 10px rgba(0, 0, 0, 0.2))'
                 }}
@@ -162,7 +164,7 @@ export default function Home() {
           </Grid>
         </Container>
       </Box>
-      
+
       <Container maxWidth="lg" sx={{ py: 10 }}>
         <Typography variant="h4" align="center" gutterBottom sx={{ fontWeight: 700 }}>
           Features
@@ -170,7 +172,7 @@ export default function Home() {
         <Typography variant="h6" align="center" color="text.secondary" sx={{ mb: 8, maxWidth: '800px', mx: 'auto' }}>
           Everything you need to manage awesome lists efficiently
         </Typography>
-        
+
         <Grid container spacing={4}>
           <Grid item xs={12} md={4}>
             <Card sx={{ height: '100%', boxShadow: 3, transition: '0.3s', '&:hover': { transform: 'translateY(-5px)', boxShadow: 5 } }}>
@@ -207,7 +209,7 @@ export default function Home() {
               </CardContent>
             </Card>
           </Grid>
-          
+
           <Grid item xs={12} md={4}>
             <Card sx={{ height: '100%', boxShadow: 3, transition: '0.3s', '&:hover': { transform: 'translateY(-5px)', boxShadow: 5 } }}>
               <CardContent>
@@ -243,7 +245,7 @@ export default function Home() {
               </CardContent>
             </Card>
           </Grid>
-          
+
           <Grid item xs={12} md={4}>
             <Card sx={{ height: '100%', boxShadow: 3, transition: '0.3s', '&:hover': { transform: 'translateY(-5px)', boxShadow: 5 } }}>
               <CardContent>
@@ -281,7 +283,7 @@ export default function Home() {
           </Grid>
         </Grid>
       </Container>
-      
+
       <Box sx={{ bgcolor: 'background.default', py: 10 }}>
         <Container maxWidth="lg">
           <Grid container spacing={6} alignItems="center">
@@ -297,8 +299,8 @@ export default function Home() {
                   <ListItemIcon sx={{ minWidth: 'auto', mr: 1 }}>
                     <CodeIcon color="primary" />
                   </ListItemIcon>
-                  <ListItemText 
-                    primary="Frontend: Next.js, TypeScript, Material UI" 
+                  <ListItemText
+                    primary="Frontend: Next.js, TypeScript, Material UI"
                     secondary="Modern React framework with type safety and beautiful components"
                   />
                 </ListItem>
@@ -306,8 +308,8 @@ export default function Home() {
                   <ListItemIcon sx={{ minWidth: 'auto', mr: 1 }}>
                     <CodeIcon color="primary" />
                   </ListItemIcon>
-                  <ListItemText 
-                    primary="Backend: FastAPI, SQLAlchemy, Pydantic" 
+                  <ListItemText
+                    primary="Backend: FastAPI, SQLAlchemy, Pydantic"
                     secondary="High-performance API with robust data validation"
                   />
                 </ListItem>
@@ -315,14 +317,14 @@ export default function Home() {
                   <ListItemIcon sx={{ minWidth: 'auto', mr: 1 }}>
                     <CodeIcon color="primary" />
                   </ListItemIcon>
-                  <ListItemText 
-                    primary="Deployment: Docker, PostgreSQL" 
+                  <ListItemText
+                    primary="Deployment: Docker, PostgreSQL"
                     secondary="Containerized for consistent environments"
                   />
                 </ListItem>
               </List>
-              <Button 
-                variant="outlined" 
+              <Button
+                variant="outlined"
                 size="large"
                 startIcon={<GitHubIcon />}
                 component="a"
@@ -335,11 +337,11 @@ export default function Home() {
               </Button>
             </Grid>
             <Grid item xs={12} md={6}>
-              <Box 
-                component="img" 
-                src="/open-source.svg" 
+              <Box
+                component="img"
+                src="/open-source.svg"
                 alt="Open Source"
-                sx={{ 
+                sx={{
                   width: '100%',
                   filter: 'drop-shadow(0px 5px 10px rgba(0, 0, 0, 0.1))'
                 }}
@@ -348,7 +350,7 @@ export default function Home() {
           </Grid>
         </Container>
       </Box>
-      
+
       <Box sx={{ bgcolor: 'primary.main', color: 'white', py: 8 }}>
         <Container maxWidth="lg" sx={{ textAlign: 'center' }}>
           <Typography variant="h4" gutterBottom sx={{ fontWeight: 700 }}>
@@ -357,13 +359,14 @@ export default function Home() {
           <Typography variant="h6" sx={{ mb: 4, opacity: 0.9, maxWidth: '700px', mx: 'auto' }}>
             Create, manage, and maintain your awesome lists with a modern, intuitive interface
           </Typography>
-          <Button 
-            variant="contained" 
+          <Button
+            variant="contained"
             size="large"
-            onClick={() => router.push('/dashboard')}
-            sx={{ 
-              py: 1.5, 
-              px: 5, 
+            component={Link}
+            href="/dashboard"
+            sx={{
+              py: 1.5,
+              px: 5,
               borderRadius: 2,
               backgroundColor: 'white',
               color: 'primary.main',
@@ -377,7 +380,7 @@ export default function Home() {
           </Button>
         </Container>
       </Box>
-      
+
       <Box sx={{ bgcolor: '#1e1e1e', color: 'white', py: 4 }}>
         <Container maxWidth="lg">
           <Grid container spacing={2} justifyContent="space-between" alignItems="center">
@@ -388,8 +391,8 @@ export default function Home() {
             </Grid>
             <Grid item>
               <Box sx={{ display: 'flex', gap: 2 }}>
-                <Button 
-                  color="inherit" 
+                <Button
+                  color="inherit"
                   size="small"
                   component={Link}
                   href="/about"
@@ -397,8 +400,8 @@ export default function Home() {
                 >
                   About
                 </Button>
-                <Button 
-                  color="inherit" 
+                <Button
+                  color="inherit"
                   size="small"
                   component={Link}
                   href="https://github.com/username/alm"
