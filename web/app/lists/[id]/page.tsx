@@ -5,6 +5,8 @@ import { useParams, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { PlusCircle, Edit, Trash } from 'lucide-react'
+import { Input } from '@/components/ui/input'
 
 interface Item {
   id: string
@@ -50,6 +52,9 @@ export default function ListDetail() {
   const [list, setList] = useState<AwesomeList | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [showAddCategory, setShowAddCategory] = useState(false)
+  const [newCategoryName, setNewCategoryName] = useState('')
+  const [newCategoryDescription, setNewCategoryDescription] = useState('')
 
   useEffect(() => {
     const fetchList = async () => {
@@ -98,6 +103,40 @@ export default function ListDetail() {
     }
   }
 
+  const handleAddCategory = async () => {
+    if (!newCategoryName) return
+
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/categories/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          list_id: params.id,
+          name: newCategoryName,
+          description: newCategoryDescription || null,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to create category')
+      }
+
+      // Refresh the list data
+      const updatedResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/lists/${params.id}`)
+      const updatedData = await updatedResponse.json()
+      setList(updatedData)
+
+      // Reset form
+      setNewCategoryName('')
+      setNewCategoryDescription('')
+      setShowAddCategory(false)
+    } catch (err: any) {
+      setError(err.message)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -134,6 +173,10 @@ export default function ListDetail() {
         <div className="container flex items-center justify-between">
           <h1 className="text-xl font-bold">{list.title}</h1>
           <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setShowAddCategory(true)}>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Add Category
+            </Button>
             <Button variant="secondary" asChild>
               <Link href="/">Home</Link>
             </Button>
@@ -147,11 +190,56 @@ export default function ListDetail() {
           <p className="mb-6 text-muted-foreground">{list.description}</p>
         )}
 
+        {/* Add Category Dialog */}
+        {showAddCategory && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <div className="w-full max-w-md bg-background p-6 rounded-lg">
+              <h2 className="text-xl font-bold mb-4">Add Category</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Category Name</label>
+                  <Input
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    placeholder="Enter category name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Description (optional)</label>
+                  <Input
+                    value={newCategoryDescription}
+                    onChange={(e) => setNewCategoryDescription(e.target.value)}
+                    placeholder="Enter category description"
+                  />
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setShowAddCategory(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleAddCategory}>
+                    Add Category
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="grid gap-6">
           {list.categories.map((category) => (
             <Card key={category.id}>
               <CardHeader>
-                <CardTitle>{category.name}</CardTitle>
+                <div className="flex justify-between items-center">
+                  <CardTitle>{category.name}</CardTitle>
+                  <div className="flex gap-2">
+                    <Button variant="ghost" size="icon">
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon">
+                      <Trash className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
                 {category.description && (
                   <CardDescription>{category.description}</CardDescription>
                 )}

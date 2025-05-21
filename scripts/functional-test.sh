@@ -126,5 +126,17 @@ else
   exit 1
 fi
 
+# T-04 UI smoke test
+echo "T-04: Testing UI accessibility"
+# Simple UI test - just check if the homepage is accessible
+HOMEPAGE_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:3001")
+if [ "$HOMEPAGE_STATUS" -eq 200 ]; then
+  echo "Homepage is accessible: HTTP $HOMEPAGE_STATUS"
+  echo "T-04: PASS - UI is accessible"
+else
+  echo "T-04: FAIL - UI is not accessible, got HTTP $HOMEPAGE_STATUS"
+  exit 1
+fi
+
 echo "All tests passed successfully!"
 exit 0
