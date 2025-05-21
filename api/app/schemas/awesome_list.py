@@ -39,14 +39,21 @@ class AwesomeListCreate(BaseModel):
 
 # Import schema
 class ImportRequest(BaseModel):
-    repo_url: str
+    repoUrl: str
+
+    class Config:
+        populate_by_name = True
+        alias_generator = lambda field_name: field_name  # Keep the field names as is
 
 
 class ImportResponse(BaseModel):
-    list_id: str
+    listId: str = Field(alias="list_id")
     title: str
-    item_count: int
-    category_count: int
+    itemCount: int = Field(alias="item_count")
+    categoryCount: int = Field(alias="category_count")
+
+    class Config:
+        populate_by_name = True
 
 
 # Update schemas

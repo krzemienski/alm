@@ -27,17 +27,17 @@ async def import_list(
 
     try:
         import_result = await import_awesome_list(
-            repo_url=import_req.repo_url,
+            repo_url=import_req.repoUrl,
             request_id=request_id,
             db=db
         )
 
-        return ImportResponse(
-            list_id=import_result["list_id"],
-            title=import_result["title"],
-            item_count=import_result["item_count"],
-            category_count=import_result["category_count"]
-        )
+        return {
+            "listId": import_result["list_id"],
+            "title": import_result["title"],
+            "itemCount": import_result["item_count"],
+            "categoryCount": import_result["category_count"]
+        }
     except Exception as e:
         await emit_event(
             "import:error",

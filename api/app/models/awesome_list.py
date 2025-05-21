@@ -33,7 +33,8 @@ class Category(BaseModel):
         "Category",
         backref="parent",
         remote_side="Category.id",
-        cascade="all, delete-orphan"
+        cascade="all, delete-orphan",
+        single_parent=True
     )
 
 

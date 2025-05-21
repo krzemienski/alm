@@ -3,17 +3,14 @@ FROM node:18-alpine
 WORKDIR /app
 
 # Install dependencies
-COPY package.json package-lock.json* ./
-RUN npm ci
+COPY package.json ./
+RUN npm install
 
 # Copy source
 COPY . .
 
-# Build app
-RUN npm run build
-
 # Expose port
 EXPOSE 3000
 
-# Start the application
+# Start the application in development mode (includes build)
 CMD ["npm", "run", "dev"]
