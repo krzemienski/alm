@@ -48,7 +48,7 @@ async def import_list(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get("/lists/{list_id}", response_model=AwesomeList)
+@router.get("/lists/{list_id}", response_model=None)
 async def get_list(
     list_id: str,
     db: AsyncSession = Depends(get_db),

@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -6,13 +6,12 @@ from sqlalchemy import select, delete
 
 from app.models.base import get_db
 from app.models.awesome_list import Category
-from app.schemas.awesome_list import Category as CategorySchema
 from app.schemas.awesome_list import CategoryCreate, CategoryUpdate
 
 router = APIRouter()
 
 
-@router.get("/{category_id}", response_model=CategorySchema)
+@router.get("/{category_id}")
 async def get_category(
     category_id: str,
     db: AsyncSession = Depends(get_db)
@@ -24,10 +23,20 @@ async def get_category(
     if not category:
         raise HTTPException(status_code=404, detail="Category not found")
 
-    return category
+    # Create a clean dict response
+    return {
+        "id": category.id,
+        "name": category.name,
+        "description": category.description,
+        "list_id": category.list_id,
+        "parent_id": category.parent_id,
+        "order": category.order,
+        "items": [],
+        "subcategories": []
+    }
 
 
-@router.post("/", response_model=CategorySchema)
+@router.post("/")
 async def create_category(
     category: CategoryCreate,
     db: AsyncSession = Depends(get_db)
@@ -45,10 +54,20 @@ async def create_category(
     await db.commit()
     await db.refresh(db_category)
 
-    return db_category
+    # Create a clean dict response
+    return {
+        "id": db_category.id,
+        "name": db_category.name,
+        "description": db_category.description,
+        "list_id": db_category.list_id,
+        "parent_id": db_category.parent_id,
+        "order": db_category.order,
+        "items": [],
+        "subcategories": []
+    }
 
 
-@router.put("/{category_id}", response_model=CategorySchema)
+@router.put("/{category_id}")
 async def update_category(
     category_id: str,
     category: CategoryUpdate,
@@ -74,7 +93,17 @@ async def update_category(
     await db.commit()
     await db.refresh(db_category)
 
-    return db_category
+    # Create a clean dict response
+    return {
+        "id": db_category.id,
+        "name": db_category.name,
+        "description": db_category.description,
+        "list_id": db_category.list_id,
+        "parent_id": db_category.parent_id,
+        "order": db_category.order,
+        "items": [],
+        "subcategories": []
+    }
 
 
 @router.delete("/{category_id}")

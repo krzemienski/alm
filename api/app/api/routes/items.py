@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -6,13 +6,12 @@ from sqlalchemy import select, delete
 
 from app.models.base import get_db
 from app.models.awesome_list import Item
-from app.schemas.awesome_list import Item as ItemSchema
 from app.schemas.awesome_list import ItemCreate, ItemUpdate
 
 router = APIRouter()
 
 
-@router.get("/{item_id}", response_model=ItemSchema)
+@router.get("/{item_id}")
 async def get_item(
     item_id: str,
     db: AsyncSession = Depends(get_db)
@@ -24,10 +23,19 @@ async def get_item(
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
 
-    return item
+    # Return a dictionary instead of the model
+    return {
+        "id": item.id,
+        "name": item.name,
+        "url": item.url,
+        "description": item.description,
+        "category_id": item.category_id,
+        "list_id": item.list_id,
+        "order": item.order
+    }
 
 
-@router.post("/", response_model=ItemSchema)
+@router.post("/")
 async def create_item(
     item: ItemCreate,
     db: AsyncSession = Depends(get_db)
@@ -46,10 +54,19 @@ async def create_item(
     await db.commit()
     await db.refresh(db_item)
 
-    return db_item
+    # Return a dictionary instead of the model
+    return {
+        "id": db_item.id,
+        "name": db_item.name,
+        "url": db_item.url,
+        "description": db_item.description,
+        "category_id": db_item.category_id,
+        "list_id": db_item.list_id,
+        "order": db_item.order
+    }
 
 
-@router.put("/{item_id}", response_model=ItemSchema)
+@router.put("/{item_id}")
 async def update_item(
     item_id: str,
     item: ItemUpdate,
@@ -75,7 +92,16 @@ async def update_item(
     await db.commit()
     await db.refresh(db_item)
 
-    return db_item
+    # Return a dictionary instead of the model
+    return {
+        "id": db_item.id,
+        "name": db_item.name,
+        "url": db_item.url,
+        "description": db_item.description,
+        "category_id": db_item.category_id,
+        "list_id": db_item.list_id,
+        "order": db_item.order
+    }
 
 
 @router.delete("/{item_id}")
