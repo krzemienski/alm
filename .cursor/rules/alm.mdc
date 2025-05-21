@@ -1,0 +1,233 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+# Awesome List Manager (alm) — Cursor Build Prompt (CONTACT7-MCP)
+
+> **Feed this document directly into Cursor’s code‑generation agent.**
+> It merges the original *docs/prompt.md* details with Docker‑first execution, ShadCN dark theme, CONTACT7‑MCP support, and an external functional‑test harness.
+> This is the **single source of truth**—all earlier drafts are obsolete.
+
+---
+
+## 0 · Global Execution Rules (Cursor)
+
+| ID      | Rule                                                                                                                         |
+| ------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| **R‑1** | **Run everything via Docker** (`docker compose up -d --build`). Never invoke Python / Node or tests on the host.             |
+| **R‑2** | Functional verification is driven by `scripts/functional-test.sh`, which exercises the running stack over the local network. |
+| **R‑3** | After each green test suite, Cursor auto‑creates a branch `feat/<unit>` and commits `pass:<unit>`.                           |
+| **R‑4** | **Event logs** (JSON lines) stream simultaneously to `/events` (SSE) and as CONTACT7‑MCP `event:<step>` entries.             |
+| **R‑5** | **Mandatory Cognitive Toolkit & Git Workflow** – At the start of every operation cycle, load the **Context7 memory map** and engage the **Sequential‑Thinking MCP** as the baseline. Evaluate and incorporate any additional MCPs available. For each task or sub‑task, create a Git feature branch `feat/<task‑slug>`, commit incrementally (semantic messages), and push/merge after the functional test suite passes. |
+
+---
+
+## 1 · Project Overview
+
+**Awesome List Manager (alm)** imports, edits, validates, and republishes GitHub **awesome lists**:
+
+* **Import** any public awesome list via URL—no token required.
+* **Edit** categories, sub‑categories, and items in a ShadCN dark‑theme UI.
+* **Validate** with `awesome-lint` + `awesome_bot`.
+* **Export** a regenerated, spec‑compliant README and optionally push.
+* **Docker‑only** execution; event‑log streaming; external black‑box functional tests.
+
+---
+
+## 2 · Key References & Resources
+
+| Topic          | Link                                                                                                                                                                                      |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Canonical spec | [https://github.com/sindresorhus/awesome](mdc:https:/github.com/sindresorhus/awesome)                                                                                                        |
+| Example lists  | [https://github.com/vsouza/awesome-ios](mdc:https:/github.com/vsouza/awesome-ios) · [https://github.com/dypsilon/frontend-dev-bookmarks](mdc:https:/github.com/dypsilon/frontend-dev-bookmarks) |
+| Lint tools     | **awesome-lint**, **awesome\_bot**                                                                                                                                                        |
+| Test fixture   | [https://github.com/krzemienski/awesome-video](mdc:https:/github.com/krzemienski/awesome-video)                                                                                              |
+
+---
+
+## 3 · Architecture
+
+| Layer            | Technology                                                |
+| ---------------- | --------------------------------------------------------- |
+| **Frontend**     | Next.js 14 (App Router) · Tailwind · **shadcn/ui** (dark) |
+| **Backend**      | FastAPI · async SQLAlchemy · structlog                    |
+| **Database**     | Postgres 15                                               |
+| **Broker**       | Redis Streams → SSE `/events` + MCP                       |
+| **Proxy (prod)** | Nginx                                                     |
+
+```
+web (Next.js) ─── REST ─▶ api (FastAPI) ──► Postgres
+  ▲                   ▲
+  │                   └─► Redis Streams (event log)
+  │
+SSE /events
+```
+
+### 3A · Awesome‑List Specification & Quality Rules
+
+*Follow the standard Sindre‑Sorhus “awesome” spec* (title, description, optional TOC, `##` categories, `###` sub‑categories, bullet items).
+
+Quality gates enforced during import:
+
+1. **awesome‑lint** clean.
+2. **awesome\_bot** all links 2xx.
+3. Each item has ≥ 50 ★ **or** recent commit (≤ 18 months) **and** OSI license.
+4. Fail import if any rule breaks—emit `validate:quality` event.
+
+---
+
+## 4 · Development Phases
+
+1. **Backend & tests** → API, DB, event logs; pass external functional tests.
+2. **Frontend UI** → ShadCN dark‑theme components; Playwright smoke.
+3. **Docs & polish** → README, Swagger, CI.
+
+---
+
+## 5 · Docker & Compose
+
+Services: **api**, **web**, **db**, **redis**, (optional **nginx**). All commands—including tests—execute inside this stack.
+
+```yaml
+version: "3.9"
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: alm
+      POSTGRES_PASSWORD: alm
+      POSTGRES_DB: alm
+    volumes: [db:/var/lib/postgresql/data]
+
+  redis:
+    image: redis:7-alpine
+
+  api:
+    build: ./api
+    depends_on: [db, redis]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://alm:alm@db:5432/alm
+      REDIS_URL: redis://redis:6379/0
+    ports: ["8000:8000"]
+
+  web:
+    build: ./web
+    depends_on: [api]
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: http://api:8000
+    ports: ["3000:3000"]
+
+volumes:
+  db:
+```
+
+---
+
+## 6 · API Specification
+
+| Route            | Verb | Purpose                                   |
+| ---------------- | ---- | ----------------------------------------- |
+| `/import`        | POST | Pull raw README, parse, persist, validate |
+| `/lists/{id}`    | GET  | Return list tree & metadata               |
+| `/items`         | CRUD | Manage project entries                    |
+| `/categories`    | CRUD | Manage categories / sub‑categories        |
+| `/export/{id}`   | GET  | Generate README markdown                  |
+| `/validate/{id}` | GET  | Run awesome‑lint & awesome\_bot           |
+| `/events`        | GET  | SSE stream of event logs                  |
+| `/health`        | GET  | Liveness probe for harness                |
+
+*Event‑log JSON sample:*
+
+```json
+{
+  "timestamp": "2025-05-16T18:05:11.456Z",
+  "requestId": "uuid",
+  "step": "import:parse",
+  "status": "ok",
+  "detail": { "items": 58, "categories": 7 },
+  "elapsedMs": 912
+}
+```
+
+---
+
+## 7 · UI Wireframes (ASCII)
+
+### Import Screen `/import`
+
+```
++---------------------------------------------------+
+| Import Awesome List                               |
+| [ https://github.com/owner/repo       ][ Import ] |
++---------------------------------------------------+
+| Live Logs                                         |
+| ▸ import:start                    ✔              |
+| ▸ import:download README (12 KB)   ✔              |
+| ▸ import:parse   58 items          ✔              |
+| ▸ validate:lint  zero errors       ✔              |
+| ▸ validate:links zero errors       ✔              |
++---------------------------------------------------+
+```
+
+### Dashboard `/list/[id]`
+
+```
+Sidebar              |  Items Table
+────────────────────  | ─────────────────────────────
+▸ Video               | Title      URL     Actions
+  • Players           | ffmpeg     ...     [E]
+  • Transcoders       | ...
+```
+
+(Additional: **Edit Modal**, **Validation Report**, **Settings**, **Floating Log Console**.)
+
+---
+
+## 8 · External Functional‑Test Harness
+
+`scripts/functional-test.sh` (executed by CI & local dev)
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+API=http://localhost:8000
+
+# Wait for health
+until curl -sf "$API/health" >/dev/null; do sleep 1; done
+
+# T‑01 Import parity
+read -r LID CNT_MD <<< $(curl -sf -X POST "$API/import" \
+  -H 'Content-Type: application/json' \
+  -d '{"repoUrl":"https://github.com/krzemienski/awesome-video"}' | jq -r '.listId,.itemCount')
+CNT_DB=$(curl -sf "$API/lists/$LID" | jq '.items|length')
+[[ "$CNT_MD" == "$CNT_DB" ]]
+
+# T‑02 CRUD, T‑03 Export round‑trip, T‑04 UI smoke …
+```
+
+---
+
+## 9 · MCP Checkpoints & Git Branches
+
+| Checkpoint  | Branch            | Commit     |
+| ----------- | ----------------- | ---------- |
+| `import-ok` | `feat/T01-import` | `pass:T01` |
+| `crud-ok`   | `feat/T02-crud`   | `pass:T02` |
+| `export-ok` | `feat/T03-export` | `pass:T03` |
+| `ui-ok`     | `feat/T04-ui`     | `pass:T04` |
+
+---
+
+## 10 · Deliverables
+
+1. Repository (inside Cursor) with branch per checkpoint
+2. Dockerfiles, `docker-compose.yml`, CI workflow
+3. Functional‑test script & Playwright specs
+4. README with dev, test, deploy docs
+5. Event logs visible in UI & CONTACT7-MCP timeline
+
+---
+
+> **Implement the entire codebase to this specification.**
+> Use CONTACT7-MCP for memory, Git, and network tasks; ensure all functional tests pass via the external harness. **No host-level commands—Docker only.**
